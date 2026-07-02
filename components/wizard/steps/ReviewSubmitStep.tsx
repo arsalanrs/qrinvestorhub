@@ -69,8 +69,11 @@ export function ReviewSubmitStep() {
           { label: 'Name', value: `${b?.firstName || ''} ${b?.lastName || ''}`.trim() },
           { label: 'Email', value: b?.email || '' },
           { label: 'Phone', value: b?.phone || '' },
+          { label: 'Date of Birth', value: b?.dateOfBirth || '' },
+          { label: 'SSN', value: b?.ssn ? '•••-••-' + b.ssn.slice(-4) : '' },
           { label: 'Credit Range', value: b?.creditRange || '' },
           { label: 'Co-Borrower', value: b?.hasCoBorrower ? b.coBorrowerName : 'None' },
+          { label: 'Co-Borrower Credit', value: b?.hasCoBorrower ? (b.coBorrowerCreditRange || '') : '' },
         ]} />
 
         <SummaryBlock title="Entity" rows={[
@@ -105,23 +108,21 @@ export function ReviewSubmitStep() {
 
       {/* Document Status */}
       {formValues.documents && formValues.documents.length > 0 && (
-        <WizardCard title="Document Status">
+        <WizardCard title="Uploaded Documents">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {formValues.documents.map(doc => (
               <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--paper-dim)' }}>
-                <span style={{ fontSize: '13px', color: 'var(--ink-soft)' }}>
-                  {doc.label} {doc.required && <span style={{ color: 'var(--clay)', fontSize: '11px' }}>*required</span>}
-                </span>
+                <span style={{ fontSize: '13px', color: 'var(--ink-soft)' }}>{doc.label}</span>
                 <span style={{
                   fontSize: '11px',
                   padding: '2px 8px',
                   borderRadius: '2px',
-                  background: doc.status === 'uploaded' ? 'var(--ledger-green-soft)' : 'var(--clay-soft)',
-                  color: doc.status === 'uploaded' ? 'var(--ledger-green)' : 'var(--clay)',
+                  background: doc.status === 'uploaded' ? 'var(--ledger-green-soft)' : 'var(--paper-dim)',
+                  color: doc.status === 'uploaded' ? 'var(--ledger-green)' : 'var(--slate)',
                   fontFamily: 'IBM Plex Mono, monospace',
                   fontWeight: 600,
                 }}>
-                  {doc.status === 'uploaded' ? 'Uploaded ✓' : 'Missing'}
+                  {doc.status === 'uploaded' ? 'Uploaded ✓' : 'Not uploaded'}
                 </span>
               </div>
             ))}

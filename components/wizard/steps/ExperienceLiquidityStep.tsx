@@ -32,7 +32,7 @@ export function ExperienceLiquidityStep() {
   const experience = watch('experience');
   const liquidity = useWatch({ control, name: 'liquidity' }) as InvestorApplication['liquidity'];
 
-  const totalNet = (liquidity || []).reduce((sum, a) => sum + toNum(a.estimatedValue) - toNum(a.amountOwed), 0);
+  const totalLiquid = (liquidity || []).reduce((sum, a) => sum + toNum(a.estimatedBalance ?? (a as { estimatedValue?: string }).estimatedValue), 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -126,11 +126,11 @@ export function ExperienceLiquidityStep() {
       </WizardCard>
 
       {/* Liquidity */}
-      <WizardCard title="Liquidity & Assets" subtitle="Lenders want to see sufficient reserves. Add your liquid assets below — this stays confidential.">
+      <WizardCard title="Liquidity & Assets" subtitle="We always ask for an account of your liquidity/assets. It is not always needed, but sometimes showing reserves can help with getting a better deal or overall qualification. Add your liquid assets below — this stays confidential.">
         <div style={{ marginBottom: '20px' }}>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1.5fr 1fr 1fr',
+            gridTemplateColumns: '1.5fr 1fr',
             gap: '12px',
             padding: '10px 12px',
             background: 'var(--paper-dim)',
@@ -138,8 +138,7 @@ export function ExperienceLiquidityStep() {
             marginBottom: '8px',
           }}>
             <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--slate)' }}>Asset Type</span>
-            <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--slate)' }}>Estimated Value</span>
-            <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--slate)' }}>Amount Owed</span>
+            <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--slate)' }}>Estimated Balance</span>
           </div>
 
           {[
@@ -150,7 +149,7 @@ export function ExperienceLiquidityStep() {
           ].map(({ index, label }) => (
             <div key={index} style={{
               display: 'grid',
-              gridTemplateColumns: '1.5fr 1fr 1fr',
+              gridTemplateColumns: '1.5fr 1fr',
               gap: '12px',
               padding: '8px 12px',
               borderBottom: '1px solid var(--line)',
@@ -159,14 +158,7 @@ export function ExperienceLiquidityStep() {
               <span style={{ fontSize: '14px', color: 'var(--ink-soft)', fontFamily: 'Inter, sans-serif' }}>{label}</span>
               <Controller
                 control={control}
-                name={`liquidity.${index}.estimatedValue`}
-                render={({ field }) => (
-                  <CurrencyInput value={field.value} onChange={field.onChange} placeholder="0" />
-                )}
-              />
-              <Controller
-                control={control}
-                name={`liquidity.${index}.amountOwed`}
+                name={`liquidity.${index}.estimatedBalance`}
                 render={({ field }) => (
                   <CurrencyInput value={field.value} onChange={field.onChange} placeholder="0" />
                 )}
@@ -178,12 +170,12 @@ export function ExperienceLiquidityStep() {
             display: 'flex',
             justifyContent: 'flex-end',
             padding: '12px',
-            background: totalNet < 0 ? 'var(--clay-soft)' : 'var(--ledger-green-soft)',
+            background: 'var(--ledger-green-soft)',
             borderRadius: '2px',
             marginTop: '8px',
           }}>
-            <span style={{ fontSize: '14px', fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', color: totalNet < 0 ? 'var(--clay)' : 'var(--ledger-green)' }}>
-              Net Liquid Assets: {fmt(totalNet)}
+            <span style={{ fontSize: '14px', fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', color: 'var(--ledger-green)' }}>
+              Total Liquid Assets: {fmt(totalLiquid)}
             </span>
           </div>
         </div>

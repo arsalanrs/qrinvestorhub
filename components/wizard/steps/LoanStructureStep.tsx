@@ -38,7 +38,14 @@ export function LoanStructureStep() {
   const { control, watch, register } = useFormContext<InvestorApplication>();
   const program = watch('loanProgram');
   const transactionType = watch('loanRequest.transactionType');
-  const interestOnly = watch('loanRequest.interestOnly');
+  const properties = watch('properties') || [];
+
+  const propertyOptions = properties
+    .filter(p => p.address?.trim())
+    .map(p => ({
+      id: p.id,
+      label: [p.address, p.city, p.state, p.zip].filter(Boolean).join(', '),
+    }));
 
   const availableTypes = ALL_TRANSACTION_TYPES.filter(
     t => t.programs.includes('all') || t.programs.includes(program || '')
@@ -84,6 +91,35 @@ export function LoanStructureStep() {
           ))}
         </div>
       </div>
+
+      {/* Subject Property */}
+      {transactionType && (
+        <div style={{ marginBottom: '24px' }}>
+          {transactionType === 'purchase' ? (
+            <div>
+              <label style={labelStyle}>
+                Property Address{' '}
+                <span style={{ fontSize: '11px', color: 'var(--slate-light)', fontWeight: 400 }}>(if you have one)</span>
+              </label>
+              <input
+                {...register('loanRequest.purchaseSubjectAddress')}
+                placeholder="123 Main St, City, ST 12345"
+                style={inputStyle}
+              />
+            </div>
+          ) : propertyOptions.length > 0 ? (
+            <div>
+              <label style={labelStyle}>Subject Property</label>
+              <select {...register('loanRequest.subjectPropertyId')} style={inputStyle}>
+                <option value="">Select a property...</option>
+                {propertyOptions.map(p => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {/* Loan Amount Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>

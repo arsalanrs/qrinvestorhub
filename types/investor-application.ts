@@ -39,12 +39,14 @@ export interface BorrowerInfo {
   lastName: string;
   email: string;
   phone: string;
+  dateOfBirth: string;
+  ssn: string;
   creditRange: '620-659' | '660-699' | '700-739' | '740+' | 'not_sure' | '';
-  brokerReferral: string;
   hasCoBorrower: boolean;
   coBorrowerName: string;
   coBorrowerEmail: string;
   coBorrowerPhone: string;
+  coBorrowerCreditRange: '620-659' | '660-699' | '700-739' | '740+' | 'not_sure' | '';
 }
 
 export interface EntityInfo {
@@ -73,8 +75,7 @@ export interface ExperienceInfo {
 export interface LiquidityAsset {
   type: 'checking_savings' | 'retirement' | 'stocks_brokerage' | 'other';
   label: string;
-  estimatedValue: string;
-  amountOwed: string;
+  estimatedBalance: string;
 }
 
 export interface PropertyData {
@@ -105,6 +106,8 @@ export interface PropertyData {
 
 export interface LoanRequest {
   transactionType: TransactionType | '';
+  subjectPropertyId: string;
+  purchaseSubjectAddress: string;
   requestedLoanAmount: string;
   purchasePrice: string;
   desiredCashOut: string;
@@ -125,9 +128,7 @@ export interface LoanRequest {
 export interface BlanketGoal {
   portfolioAction: string;
   numProperties: string;
-  allOwned: boolean;
   anyUnderContract: boolean;
-  desiredLoanAmount: string;
   desiredCashOut: string;
   closingTimeline: string;
 }

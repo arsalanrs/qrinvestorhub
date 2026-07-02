@@ -32,7 +32,7 @@ export interface LoanMetrics {
 }
 
 export function calcMetrics(params: {
-  liquidAssets?: Array<{ estimatedValue: string; amountOwed: string }>;
+  liquidAssets?: Array<{ estimatedBalance?: string; estimatedValue?: string; amountOwed?: string }>;
   properties?: Array<{
     currentAsIsValue: string;
     currentMortgageBalance: string;
@@ -68,7 +68,7 @@ export function calcMetrics(params: {
   } = params;
 
   const totalLiquidAssets = liquidAssets.reduce(
-    (sum, a) => sum + toNum(a.estimatedValue) - toNum(a.amountOwed), 0
+    (sum, a) => sum + toNum(a.estimatedBalance ?? a.estimatedValue) - toNum(a.amountOwed ?? ''), 0
   );
 
   const totalPortfolioValue = properties.reduce((s, p) => s + toNum(p.currentAsIsValue), 0);

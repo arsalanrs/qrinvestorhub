@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useWatch, useFormContext } from 'react-hook-form';
 import type { InvestorApplication } from '@/types/investor-application';
-import { calcMetrics, getGuidelineWarnings, fmt, pct } from '@/lib/loan-calculations';
+import { calcMetrics, fmt, pct } from '@/lib/loan-calculations';
 
 interface LoanLedgerProps {
   inline?: boolean;
@@ -56,22 +56,13 @@ export function LoanLedger({ inline }: LoanLedgerProps) {
     desiredCashOut: formValues.loanRequest?.desiredCashOut,
   }), [formValues]);
 
-  const warnings = useMemo(() => getGuidelineWarnings(
-    metrics,
-    formValues.loanProgram || '',
-    (formValues.properties || []).map(p => p.occupancyStatus)
-  ), [metrics, formValues.loanProgram, formValues.properties]);
-
   const program = formValues.loanProgram;
-  const missingDocs = (formValues.documents || []).filter(d => d.status === 'missing' && d.required);
 
   const sealStatus = formValues.status === 'submitted' ? 'SUBMITTED'
-    : warnings.length > 0 ? 'NEEDS REVIEW'
     : metrics.marketLTV ? 'READY FOR TERM SHEET'
     : 'INTAKE IN PROGRESS';
 
   const sealColor = sealStatus === 'SUBMITTED' ? 'var(--ledger-green)'
-    : sealStatus === 'NEEDS REVIEW' ? 'var(--clay)'
     : sealStatus === 'READY FOR TERM SHEET' ? 'var(--brass)'
     : 'var(--slate)';
 
@@ -186,43 +177,10 @@ export function LoanLedger({ inline }: LoanLedgerProps) {
       {metrics.totalLiquidAssets > 0 && (
         <div style={{ marginBottom: '16px' }}>
           <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', margin: '0 0 8px', fontFamily: 'IBM Plex Mono, monospace' }}>Liquidity</p>
-          <LedgerRow label="Net Liquid Assets" value={fmt(metrics.totalLiquidAssets)} highlight="good" />
+          <LedgerRow label="Total Liquid Assets" value={fmt(metrics.totalLiquidAssets)} highlight="good" />
           {metrics.totalMonthlyRent > 0 && (
             <LedgerRow label="Monthly Rent Roll" value={fmt(metrics.totalMonthlyRent)} />
           )}
-        </div>
-      )}
-
-      {/* Warnings */}
-      {warnings.length > 0 && (
-        <div style={{ marginBottom: '16px' }}>
-          <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', margin: '0 0 8px', fontFamily: 'IBM Plex Mono, monospace' }}>Flags</p>
-          {warnings.map((w, i) => (
-            <div key={i} style={{
-              display: 'flex',
-              gap: '8px',
-              padding: '8px 10px',
-              background: 'rgba(179,73,45,0.15)',
-              border: '1px solid rgba(179,73,45,0.3)',
-              borderRadius: '10px',
-              marginBottom: '6px',
-            }}>
-              <span style={{ flexShrink: 0, color: 'var(--clay)', fontSize: '12px' }}>⚠</span>
-              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', lineHeight: '1.5' }}>{w}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Missing Docs */}
-      {missingDocs.length > 0 && (
-        <div>
-          <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', margin: '0 0 8px', fontFamily: 'IBM Plex Mono, monospace' }}>Required Docs Missing</p>
-          {missingDocs.map(d => (
-            <div key={d.id} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', padding: '4px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ color: 'var(--clay)' }}>○</span> {d.label}
-            </div>
-          ))}
         </div>
       )}
 

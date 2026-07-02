@@ -6,6 +6,7 @@ import { calcMetrics, getGuidelineWarnings } from '@/lib/loan-calculations';
 import { generateAISummary } from '@/lib/ai-summary';
 import { upsertShapeLead } from '@/integrations/shape/client';
 import { SHAPE_STATUS_MAP } from '@/integrations/shape/field-map';
+import { sendSubmissionEmail } from '@/lib/send-submission-email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -111,11 +112,31 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Email one-pager to Nikk / staff (Formspree or Resend — non-blocking)
+    let emailStatus: string = 'skipped';
+    if (applicationId) {
+      try {
+        const emailResult = await sendSubmissionEmail(body, metrics, warnings, aiSummary, applicationId);
+        emailStatus = emailResult.sent
+          ? emailResult.channel
+          : ('skipped' in emailResult && emailResult.skipped)
+            ? 'skipped'
+            : 'failed';
+        if ('error' in emailResult && emailResult.error) {
+          console.error('[submit] submission email error:', emailResult.error);
+        }
+      } catch (emailErr) {
+        console.error('[submit] submission email error:', emailErr);
+        emailStatus = 'failed';
+      }
+    }
+
     return NextResponse.json({
       applicationId,
       aiSummary,
       shapeStatus: shapeLeadId ? 'synced' : 'skipped',
       lendingpadStatus: 'pending',
+      emailStatus,
     });
   } catch (err) {
     console.error('[submit] error:', err);

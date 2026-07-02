@@ -24,7 +24,7 @@ export const PROGRAM_CONFIGS: Record<ProgramKey, ProgramConfig> = {
     description: 'Finance multiple investment properties under one loan. Ideal for rental portfolios.',
     maxPortfolioLTV: 75,
     requiredFields: ['properties (min 2)', 'portfolio value', 'rent roll or property schedule'],
-    steps: ['Purpose', 'Borrower', 'Entity', 'Experience', 'Liquidity', 'Structure', 'Portfolio', 'Documents', 'Notes', 'Review'],
+    steps: ['Purpose', 'Borrower', 'Experience', 'Liquidity', 'Structure', 'Portfolio', 'Documents', 'Notes', 'Review'],
   },
   bridge: {
     key: 'bridge',
@@ -34,7 +34,7 @@ export const PROGRAM_CONFIGS: Record<ProgramKey, ProgramConfig> = {
     maxMarketLTV: 70,
     maxLTC: 70,
     requiredFields: ['exit strategy', 'funding timeline'],
-    steps: ['Purpose', 'Borrower', 'Entity', 'Experience', 'Property', 'Structure', 'Exit Strategy', 'Documents', 'Review'],
+    steps: ['Purpose', 'Borrower', 'Experience', 'Property', 'Structure', 'Exit Strategy', 'Documents', 'Review'],
   },
   construction: {
     key: 'construction',
@@ -44,7 +44,7 @@ export const PROGRAM_CONFIGS: Record<ProgramKey, ProgramConfig> = {
     maxLTC: 90,
     maxARV: 75,
     requiredFields: ['ARV', 'construction budget', 'builder info', 'timeline'],
-    steps: ['Purpose', 'Borrower', 'Entity', 'Experience', 'Land / Property', 'Construction Budget', 'Builder & Permits', 'Documents', 'Review'],
+    steps: ['Purpose', 'Borrower', 'Experience', 'Land / Property', 'Construction Budget', 'Builder & Permits', 'Documents', 'Review'],
   },
   dscr: {
     key: 'dscr',
@@ -54,7 +54,7 @@ export const PROGRAM_CONFIGS: Record<ProgramKey, ProgramConfig> = {
     maxMarketLTV: 80,
     minDSCR: 1.0,
     requiredFields: ['market rent', 'taxes', 'insurance', 'property type'],
-    steps: ['Purpose', 'Borrower', 'Entity', 'Experience', 'Property', 'Rental Income', 'Loan Structure', 'Documents', 'Review'],
+    steps: ['Purpose', 'Borrower', 'Experience', 'Property', 'Rental Income', 'Loan Structure', 'Documents', 'Review'],
   },
   rehab: {
     key: 'rehab',
@@ -64,7 +64,7 @@ export const PROGRAM_CONFIGS: Record<ProgramKey, ProgramConfig> = {
     maxLTC: 90,
     maxARV: 75,
     requiredFields: ['ARV', 'rehab budget', 'exit strategy'],
-    steps: ['Purpose', 'Borrower', 'Entity', 'Experience', 'Property', 'Rehab Budget', 'Exit Strategy', 'Documents', 'Review'],
+    steps: ['Purpose', 'Borrower', 'Experience', 'Property', 'Rehab Budget', 'Exit Strategy', 'Documents', 'Review'],
   },
 };
 

@@ -11,7 +11,6 @@ import { StepRail } from './StepRail';
 import { LoanLedger } from './LoanLedger';
 import { LoanGoalStep } from './steps/LoanGoalStep';
 import { BorrowerProfileStep } from './steps/BorrowerProfileStep';
-import { EntityInfoStep } from './steps/EntityInfoStep';
 import { ExperienceLiquidityStep } from './steps/ExperienceLiquidityStep';
 import { PropertyStep } from './steps/PropertyStep';
 import { LoanStructureStep } from './steps/LoanStructureStep';
@@ -25,7 +24,6 @@ import { FlowButton } from '@/components/ui/flow-button';
 const WIZARD_STEPS = [
   { key: 'goal', label: 'Loan Goal', Component: LoanGoalStep },
   { key: 'borrower', label: 'Borrower', Component: BorrowerProfileStep },
-  { key: 'entity', label: 'Entity', Component: EntityInfoStep },
   { key: 'experience', label: 'Experience', Component: ExperienceLiquidityStep },
   { key: 'property', label: 'Property', Component: PropertyStep },
   { key: 'structure', label: 'Structure', Component: LoanStructureStep },
@@ -53,11 +51,13 @@ function getDefaultValues(initialProgram?: string): InvestorApplication {
     dealStage: '',
     borrower: {
       firstName: '', lastName: '', email: '', phone: '',
-      creditRange: '', brokerReferral: '', hasCoBorrower: false,
+      dateOfBirth: '', ssn: '',
+      creditRange: '', hasCoBorrower: false,
       coBorrowerName: '', coBorrowerEmail: '', coBorrowerPhone: '',
+      coBorrowerCreditRange: '',
     },
     entity: {
-      borrowingAs: 'entity', entityName: '', entityType: '',
+      borrowingAs: 'individual', entityName: '', entityType: '',
       stateOfFormation: '', authorizedSigner: '', ownershipPercentage: '',
       ein: '', additionalGuarantors: [],
     },
@@ -67,14 +67,15 @@ function getDefaultValues(initialProgram?: string): InvestorApplication {
       isBuilderDeveloper: false, adverseHistory: false, adverseHistoryDetails: '',
     },
     liquidity: [
-      { type: 'checking_savings', label: 'Checking/Savings', estimatedValue: '', amountOwed: '' },
-      { type: 'retirement', label: 'Retirement', estimatedValue: '', amountOwed: '' },
-      { type: 'stocks_brokerage', label: 'Stocks/Brokerage', estimatedValue: '', amountOwed: '' },
-      { type: 'other', label: 'Other', estimatedValue: '', amountOwed: '' },
+      { type: 'checking_savings', label: 'Checking/Savings', estimatedBalance: '' },
+      { type: 'retirement', label: 'Retirement', estimatedBalance: '' },
+      { type: 'stocks_brokerage', label: 'Stocks/Brokerage', estimatedBalance: '' },
+      { type: 'other', label: 'Other', estimatedBalance: '' },
     ],
     properties: [defaultProperty()],
     loanRequest: {
-      transactionType: '', requestedLoanAmount: '', purchasePrice: '', desiredCashOut: '',
+      transactionType: '', subjectPropertyId: '', purchaseSubjectAddress: '',
+      requestedLoanAmount: '', purchasePrice: '', desiredCashOut: '',
       rehabBudget: '', rehabAmountFinanced: '', arv: '', constructionBudget: '',
       constructionAmountFinanced: '', completedValue: '', fundingTimeline: '',
       closingDate: '', exitStrategy: '', backupExitStrategy: '', prepayStructure: '',
@@ -212,10 +213,7 @@ export function InvestorApplicationWizard({ initialProgram }: Props) {
     return (
       <SuccessScreen
         applicationId={successData.applicationId}
-        loanProgram={program || ''}
         borrowerName={`${formValues.borrower.firstName} ${formValues.borrower.lastName}`.trim() || 'Borrower'}
-        missingDocs={successData.missingDocs}
-        aiSummary={successData.aiSummary}
       />
     );
   }

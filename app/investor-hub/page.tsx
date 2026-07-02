@@ -389,7 +389,7 @@ export default function InvestorHubPage() {
                 {[
                   'Property or portfolio builder with rent, taxes, insurance, HOA, mortgage balances, and occupancy.',
                   'Program-specific branches for Bridge exit strategy, DSCR income, construction budgets, and rehab ARV.',
-                  'Friendly guideline warnings without hard-declining the borrower too early.',
+                  'Live Loan Ledger with LTV, DSCR, and portfolio calculations as borrowers enter their scenario.',
                   'AI summary prepared for QuestRock\'s internal review team.',
                 ].map((item, i) => (
                   <div key={i} className="ih-check">{item}</div>
@@ -401,19 +401,19 @@ export default function InvestorHubPage() {
               <span className="ih-program-chip">Document checklist</span>
               <h2 style={{ marginTop: 18 }}>Upload now, complete later.</h2>
               <p>
-                Borrowers can submit with missing documents, but the hub clearly shows what is still needed before underwriting.
+                Borrowers can submit with or without documents attached. QuestRock staff will follow up for anything needed.
               </p>
               <div className="ih-doc-stack">
                 {[
-                  { label: 'Purchase contract',   status: 'UPLOADED', missing: false },
-                  { label: 'Mortgage statement',  status: 'UPLOADED', missing: false },
-                  { label: 'Scope of work',       status: 'MISSING',  missing: true },
-                  { label: 'Proof of liquidity',  status: 'REQUESTED', missing: true },
-                  { label: 'Entity documents',    status: 'UPLOADED', missing: false },
-                ].map(({ label, status, missing }) => (
+                  { label: 'Purchase contract',   status: 'UPLOADED' },
+                  { label: 'Mortgage statement',  status: 'UPLOADED' },
+                  { label: 'Scope of work',       status: 'OPTIONAL' },
+                  { label: 'Proof of liquidity',  status: 'OPTIONAL' },
+                  { label: 'Entity documents',    status: 'UPLOADED' },
+                ].map(({ label, status }) => (
                   <div key={label} className="ih-doc-row">
                     <span>{label}</span>
-                    <span className={missing ? 'ih-doc-missing' : 'ih-doc-status'}>{status}</span>
+                    <span className={status === 'OPTIONAL' ? 'ih-doc-missing' : 'ih-doc-status'}>{status}</span>
                   </div>
                 ))}
               </div>

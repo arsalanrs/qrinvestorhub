@@ -3,7 +3,6 @@
 import { useFormContext, Controller, useWatch } from 'react-hook-form';
 import type { InvestorApplication } from '@/types/investor-application';
 import { WizardCard } from '@/components/ui/WizardCard';
-import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { YesNoToggle } from '@/components/ui/YesNoToggle';
 import { fmt, toNum } from '@/lib/loan-calculations';
 
@@ -89,7 +88,7 @@ function DSCRStep() {
               {totalPITIA > 0 ? fmt(totalPITIA) + '/mo' : '—'}
             </span>
           </div>
-          {dscr !== null && (
+              {dscr !== null && (
             <div style={{ borderTop: '2px solid var(--brass)', paddingTop: '12px', marginTop: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>DSCR</span>
@@ -97,14 +96,11 @@ function DSCRStep() {
                   fontSize: '20px',
                   fontFamily: 'IBM Plex Mono, monospace',
                   fontWeight: 700,
-                  color: dscr >= 1.25 ? 'var(--ledger-green)' : dscr >= 1.0 ? 'var(--brass)' : 'var(--clay)',
+                  color: '#fff',
                 }}>
                   {dscr.toFixed(2)}
                 </span>
               </div>
-              <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '4px 0 0' }}>
-                {dscr >= 1.25 ? '✓ Strong DSCR — qualifies well.' : dscr >= 1.0 ? '~ Marginal DSCR — may qualify with good credit.' : '✗ Below 1.0 — may need structure review.'}
-              </p>
             </div>
           )}
         </div>
@@ -341,25 +337,11 @@ function BlanketPortfolioStep() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <div>
-          <label style={labelStyle}>Are all properties currently owned?</label>
-          <Controller control={control} name="blanketGoal.allOwned" render={({ field }) => (
-            <YesNoToggle value={field.value ?? false} onChange={field.onChange} />
-          )} />
-        </div>
-        <div>
           <label style={labelStyle}>Any properties under contract?</label>
           <Controller control={control} name="blanketGoal.anyUnderContract" render={({ field }) => (
             <YesNoToggle value={field.value ?? false} onChange={field.onChange} />
           )} />
         </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
-        <CurrencyInput
-          label="Desired Loan Amount"
-          value={watch('blanketGoal.desiredLoanAmount') || ''}
-          onChange={(v) => {}}
-        />
         <div>
           <label style={labelStyle}>Closing Timeline</label>
           <select {...register('blanketGoal.closingTimeline')} style={inputStyle}>
