@@ -6,14 +6,6 @@ import { PROGRAM_LIST } from '@/config/loan-programs';
 import { ChoiceCard } from '@/components/ui/ChoiceCard';
 import { WizardCard } from '@/components/ui/WizardCard';
 
-const PROGRAM_ICONS: Record<string, string> = {
-  blanket_portfolio: '🏘',
-  bridge: '🌉',
-  construction: '🏗',
-  dscr: '📊',
-  rehab: '🔨',
-};
-
 const PROGRAM_BADGES: Record<string, string> = {
   blanket_portfolio: 'Up to 75% LTV',
   bridge: 'Up to 70% LTC',
@@ -32,11 +24,10 @@ const DEAL_STAGES: { value: DealStage; label: string; description: string }[] = 
 
 const inputStyle = {
   width: '100%',
-  padding: '8px 10px',
-  border: '1.5px solid var(--line)',
-  borderRadius: '2px',
-  fontSize: '13px',
-  fontFamily: 'Inter, sans-serif',
+  padding: '10px 12px',
+  border: '1px solid var(--line)',
+  borderRadius: 'var(--radius)',
+  fontSize: '14px',
   color: 'var(--ink)',
   outline: 'none',
   background: '#fff',
@@ -57,13 +48,12 @@ export function LoanGoalStep() {
           control={control}
           name="loanProgram"
           render={({ field }) => (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '32px' }}>
+            <div className="program-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px', marginBottom: '28px' }}>
               {PROGRAM_LIST.map(p => (
                 <ChoiceCard
                   key={p.key}
                   title={p.label}
                   description={p.description}
-                  icon={PROGRAM_ICONS[p.key]}
                   badge={PROGRAM_BADGES[p.key]}
                   selected={field.value === p.key}
                   onClick={() => field.onChange(p.key as LoanProgram)}
@@ -73,8 +63,8 @@ export function LoanGoalStep() {
           )}
         />
 
-        <div style={{ borderTop: '1px solid var(--line)', paddingTop: '28px' }}>
-          <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: '18px', fontWeight: 600, color: 'var(--ink)', marginTop: 0, marginBottom: '16px' }}>
+        <div style={{ borderTop: '1px solid var(--line)', paddingTop: '24px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', marginTop: 0, marginBottom: '14px' }}>
             Where are you in the process?
           </h3>
           <Controller
@@ -99,7 +89,7 @@ export function LoanGoalStep() {
         {/* Program-specific goal fields */}
         {selectedProgram === 'bridge' && (
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: '24px' }}>
-            <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: '16px', fontWeight: 600, color: 'var(--ink)', margin: '0 0 16px' }}>Bridge Loan Details</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink)', margin: '0 0 14px' }}>Bridge Loan Details</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--ink)' }}>Purpose</label>
@@ -127,7 +117,7 @@ export function LoanGoalStep() {
 
         {selectedProgram === 'dscr' && (
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: '24px' }}>
-            <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: '16px', fontWeight: 600, color: 'var(--ink)', margin: '0 0 16px' }}>DSCR Rental Details</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink)', margin: '0 0 14px' }}>DSCR Rental Details</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--ink)' }}>Loan Action</label>
@@ -165,7 +155,7 @@ export function LoanGoalStep() {
 
         {selectedProgram === 'rehab' && (
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: '24px' }}>
-            <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: '16px', fontWeight: 600, color: 'var(--ink)', margin: '0 0 16px' }}>Rehab Loan Details</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink)', margin: '0 0 14px' }}>Rehab Loan Details</h3>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '8px', color: 'var(--ink)' }}>Exit Strategy</label>
               <div style={{ display: 'flex', gap: '12px' }}>
@@ -186,7 +176,7 @@ export function LoanGoalStep() {
 
         {selectedProgram === 'construction' && (
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: '24px' }}>
-            <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: '16px', fontWeight: 600, color: 'var(--ink)', margin: '0 0 16px' }}>Construction Details</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink)', margin: '0 0 14px' }}>Construction Details</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--ink)' }}>Land Status</label>
@@ -212,7 +202,7 @@ export function LoanGoalStep() {
 
         {selectedProgram === 'blanket_portfolio' && (
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: '24px' }}>
-            <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: '16px', fontWeight: 600, color: 'var(--ink)', margin: '0 0 16px' }}>Portfolio Details</h3>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--ink)', margin: '0 0 14px' }}>Portfolio Details</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--ink)' }}>Portfolio Action</label>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PROGRAM_CONFIGS } from '@/config/loan-programs';
 import type { ProgramKey } from '@/config/loan-programs';
 import { fmt, toNum } from '@/lib/loan-calculations';
@@ -29,6 +29,21 @@ interface AdminApplication {
   created_at: string;
 }
 
+function borrowerName(app: AdminApplication) {
+  return `${app.borrower?.firstName || ''} ${app.borrower?.lastName || ''}`.trim() || 'Unknown';
+}
+
+function programLabel(key: string) {
+  return PROGRAM_CONFIGS[key as ProgramKey]?.shortLabel || key;
+}
+
+function statusTone(status: string) {
+  const s = status.toLowerCase();
+  if (s.includes('submit') || s === 'complete') return { bg: '#ecfdf5', color: '#0f766e' };
+  if (s.includes('draft')) return { bg: '#f1f5f9', color: '#64748b' };
+  return { bg: '#eff6ff', color: '#1d4ed8' };
+}
+
 export default function InvestorHubAdminPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,6 +52,9 @@ export default function InvestorHubAdminPage() {
   const [applications, setApplications] = useState<AdminApplication[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<AdminApplication | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [programFilter, setProgramFilter] = useState('all');
 
   useEffect(() => {
     try {
@@ -54,13 +72,12 @@ export default function InvestorHubAdminPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!session) return;
+  const loadApplications = (activeSession: AdminSession) => {
     setLoading(true);
     fetch('/api/admin/investor-applications', {
       headers: {
-        'x-admin-email': session.email,
-        'x-admin-password': session.password,
+        'x-admin-email': activeSession.email,
+        'x-admin-password': activeSession.password,
       },
     })
       .then(res => {
@@ -71,9 +88,17 @@ export default function InvestorHubAdminPage() {
         }
         return res.json();
       })
-      .then(json => setApplications(json.applications || []))
+      .then(json => {
+        const apps = json.applications || [];
+        setApplications(apps);
+        setSelected(prev => (prev ? apps.find((a: AdminApplication) => a.id === prev.id) || null : null));
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (session) loadApplications(session);
   }, [session]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -94,157 +119,557 @@ export default function InvestorHubAdminPage() {
     }
   };
 
+  const signOut = () => {
+    sessionStorage.removeItem(STORAGE_KEY);
+    setSession(null);
+    setSelected(null);
+    setApplications([]);
+  };
+
+  const stats = useMemo(() => {
+    const submitted = applications.filter(a => a.submitted_at).length;
+    const flagged = applications.filter(a => (a.guideline_warnings?.length || 0) > 0).length;
+    const drafts = applications.length - submitted;
+    return { total: applications.length, submitted, drafts, flagged };
+  }, [applications]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return applications.filter(app => {
+      if (statusFilter === 'submitted' && !app.submitted_at) return false;
+      if (statusFilter === 'draft' && app.submitted_at) return false;
+      if (statusFilter === 'flagged' && !(app.guideline_warnings?.length || 0)) return false;
+      if (programFilter !== 'all' && app.loan_program !== programFilter) return false;
+      if (!q) return true;
+      const hay = [
+        borrowerName(app),
+        app.borrower?.email,
+        app.borrower?.phone,
+        app.id,
+        programLabel(app.loan_program),
+        app.status,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [applications, search, statusFilter, programFilter]);
+
   if (!session) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#14213D', padding: '24px' }}>
-        <form onSubmit={handleLogin} style={{ background: '#fff', borderRadius: '16px', padding: '40px', width: '100%', maxWidth: '400px' }}>
-          <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: '22px', margin: '0 0 8px', color: 'var(--ink)' }}>QuestRock Ops</h1>
-          <p style={{ fontSize: '13px', color: 'var(--slate)', marginBottom: '24px' }}>Investor Hub — staff access only</p>
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="Email address"
-            autoComplete="username"
-            required
-            style={{ width: '100%', padding: '10px 12px', border: '1.5px solid var(--line)', borderRadius: '4px', marginBottom: '12px', fontSize: '14px' }}
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="Password"
-            autoComplete="current-password"
-            required
-            style={{ width: '100%', padding: '10px 12px', border: '1.5px solid var(--line)', borderRadius: '4px', marginBottom: '12px', fontSize: '14px' }}
-          />
-          {authError && <p style={{ color: 'var(--clay)', fontSize: '13px', margin: '0 0 12px' }}>{authError}</p>}
-          <button type="submit" style={{ width: '100%', padding: '12px', background: 'var(--ledger-green)', color: '#fff', border: 'none', borderRadius: '999px', fontWeight: 600, cursor: 'pointer', fontSize: '14px' }}>
-            Sign In
+      <div className="admin-login">
+        <form onSubmit={handleLogin} className="admin-login-card">
+          <h1>QuestRock Ops</h1>
+          <p>Investor Hub — staff access only</p>
+          <label>
+            Email
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="username" required />
+          </label>
+          <label>
+            Password
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
+          </label>
+          {authError && <p className="admin-error">{authError}</p>}
+          <button type="submit" className="qr-btn qr-btn-green" style={{ width: '100%', marginTop: 8 }}>
+            Sign in
           </button>
         </form>
+        <style jsx global>{`
+          .admin-login {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f172a;
+            padding: 24px;
+          }
+          .admin-login-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 36px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+          }
+          .admin-login-card h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 0 6px;
+            color: var(--ink);
+          }
+          .admin-login-card p {
+            font-size: 13px;
+            color: var(--slate);
+            margin: 0 0 24px;
+          }
+          .admin-login-card label {
+            margin-bottom: 14px;
+          }
+          .admin-error {
+            color: #b45309;
+            font-size: 13px;
+            margin: 0 0 12px;
+          }
+        `}</style>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F7F5F0', display: 'flex' }}>
-      {/* Sidebar list */}
-      <aside style={{ width: '360px', borderRight: '1px solid var(--line)', background: '#fff', overflowY: 'auto', maxHeight: '100vh' }}>
-        <div style={{ padding: '20px', borderBottom: '1px solid var(--line)' }}>
-          <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: '18px', margin: '0 0 4px' }}>Investor Submissions</h1>
-          <p style={{ fontSize: '12px', color: 'var(--slate)', margin: 0 }}>{applications.length} total · internal only</p>
+    <div className="admin-shell">
+      <header className="admin-topbar">
+        <div>
+          <h1>Investor Hub</h1>
+          <p>Operations dashboard · {session.email}</p>
         </div>
-        {loading && <p style={{ padding: '20px', color: 'var(--slate)', fontSize: '13px' }}>Loading…</p>}
-        {applications.map(app => {
-          const name = `${app.borrower?.firstName || ''} ${app.borrower?.lastName || ''}`.trim() || 'Unknown';
-          const program = PROGRAM_CONFIGS[app.loan_program as ProgramKey]?.shortLabel || app.loan_program;
-          const warnings = app.guideline_warnings?.length || 0;
-          return (
-            <button
-              key={app.id}
-              type="button"
-              onClick={() => setSelected(app)}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '16px 20px',
-                border: 'none',
-                borderBottom: '1px solid var(--paper-dim)',
-                background: selected?.id === app.id ? 'var(--ledger-green-soft)' : '#fff',
-                cursor: 'pointer',
-              }}
-            >
-              <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ink)', margin: '0 0 4px' }}>{name}</p>
-              <p style={{ fontSize: '12px', color: 'var(--slate)', margin: '0 0 4px' }}>{program} · {app.status}</p>
-              {warnings > 0 && (
-                <span style={{ fontSize: '10px', padding: '2px 8px', background: 'var(--clay-soft)', color: 'var(--clay)', borderRadius: '2px', fontFamily: 'IBM Plex Mono, monospace' }}>
-                  {warnings} guideline flag{warnings !== 1 ? 's' : ''}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </aside>
+        <div className="admin-topbar-actions">
+          <button type="button" className="qr-btn qr-btn-secondary" onClick={() => session && loadApplications(session)}>
+            Refresh
+          </button>
+          <button type="button" className="qr-btn qr-btn-secondary" onClick={signOut}>
+            Sign out
+          </button>
+        </div>
+      </header>
 
-      {/* Detail panel */}
-      <main style={{ flex: 1, padding: '32px', overflowY: 'auto', maxHeight: '100vh' }}>
-        {!selected ? (
-          <p style={{ color: 'var(--slate)', fontSize: '15px' }}>Select a submission to view details, guideline warnings, and AI summary.</p>
-        ) : (
-          <div>
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: '26px', margin: '0 0 8px' }}>
-                {selected.borrower?.firstName} {selected.borrower?.lastName}
-              </h2>
-              <p style={{ color: 'var(--slate)', margin: 0 }}>
-                {selected.borrower?.email} · {selected.borrower?.phone}
-              </p>
-              <p style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: '12px', color: 'var(--slate-light)', marginTop: '8px' }}>
-                ID: {selected.id}
-              </p>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-              {[
-                { label: 'Program', value: PROGRAM_CONFIGS[selected.loan_program as ProgramKey]?.label || selected.loan_program },
-                { label: 'Status', value: selected.status },
-                { label: 'Loan Amount', value: selected.loan_request?.requestedLoanAmount ? fmt(toNum(selected.loan_request.requestedLoanAmount)) : '—' },
-                { label: 'Submitted', value: selected.submitted_at ? new Date(selected.submitted_at).toLocaleDateString() : 'Draft' },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: '8px', padding: '14px' }}>
-                  <p style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--slate-light)', margin: '0 0 4px', fontFamily: 'IBM Plex Mono, monospace' }}>{label}</p>
-                  <p style={{ fontSize: '14px', fontWeight: 600, margin: 0 }}>{value}</p>
-                </div>
-              ))}
-            </div>
-
-            {selected.guideline_warnings && selected.guideline_warnings.length > 0 && (
-              <div style={{ background: 'var(--clay-soft)', border: '1px solid rgba(179,73,45,0.2)', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--clay)', margin: '0 0 12px', fontFamily: 'IBM Plex Mono, monospace' }}>Guideline Flags (Internal)</h3>
-                {selected.guideline_warnings.map((w, i) => (
-                  <p key={i} style={{ fontSize: '13px', color: 'var(--ink-soft)', margin: '0 0 8px', lineHeight: '1.5' }}>⚠ {w}</p>
-                ))}
-              </div>
-            )}
-
-            {selected.ai_summary && (
-              <div style={{ background: 'var(--blue-soft)', border: '1px solid rgba(46,92,138,0.18)', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--blue)', margin: '0 0 12px', fontFamily: 'IBM Plex Mono, monospace' }}>AI Summary</h3>
-                <p style={{ fontSize: '14px', color: 'var(--ink-soft)', margin: 0, lineHeight: '1.65' }}>{selected.ai_summary}</p>
-              </div>
-            )}
-
-            {selected.missing_documents && selected.missing_documents.length > 0 && (
-              <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--slate)', margin: '0 0 12px', fontFamily: 'IBM Plex Mono, monospace' }}>Documents Not Yet Uploaded</h3>
-                {selected.missing_documents.map((d, i) => (
-                  <p key={i} style={{ fontSize: '13px', color: 'var(--ink-soft)', margin: '0 0 4px' }}>○ {d}</p>
-                ))}
-              </div>
-            )}
-
-            {selected.additional_notes && (
-              <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: '12px', padding: '20px' }}>
-                <h3 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--slate)', margin: '0 0 12px', fontFamily: 'IBM Plex Mono, monospace' }}>Additional Notes</h3>
-                <p style={{ fontSize: '14px', color: 'var(--ink-soft)', margin: 0, lineHeight: '1.65' }}>{selected.additional_notes}</p>
-              </div>
-            )}
-
-            <div style={{ marginTop: '24px' }}>
-              <a
-                href={`/portfolio/${selected.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ fontSize: '13px', color: 'var(--blue)', fontWeight: 500 }}
-              >
-                View customer portfolio page →
-              </a>
-            </div>
+      <div className="admin-stats">
+        {[
+          { label: 'Total applications', value: stats.total },
+          { label: 'Submitted', value: stats.submitted },
+          { label: 'Drafts', value: stats.drafts },
+          { label: 'Guideline flags', value: stats.flagged },
+        ].map(item => (
+          <div key={item.label} className="admin-stat">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
           </div>
-        )}
-      </main>
+        ))}
+      </div>
+
+      <div className="admin-toolbar">
+        <input
+          type="search"
+          placeholder="Search borrower, email, phone, ID, program…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="admin-search"
+        />
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+          <option value="all">All statuses</option>
+          <option value="submitted">Submitted</option>
+          <option value="draft">Drafts</option>
+          <option value="flagged">With flags</option>
+        </select>
+        <select value={programFilter} onChange={e => setProgramFilter(e.target.value)}>
+          <option value="all">All programs</option>
+          {Object.entries(PROGRAM_CONFIGS).map(([key, cfg]) => (
+            <option key={key} value={key}>
+              {cfg.shortLabel}
+            </option>
+          ))}
+        </select>
+        <span className="admin-count">{filtered.length} shown</span>
+      </div>
+
+      <div className="admin-layout">
+        <section className="admin-table-wrap">
+          {loading ? (
+            <p className="admin-empty">Loading applications…</p>
+          ) : filtered.length === 0 ? (
+            <p className="admin-empty">No applications match your filters.</p>
+          ) : (
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Borrower</th>
+                  <th>Program</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Submitted</th>
+                  <th>Flags</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(app => {
+                  const warnings = app.guideline_warnings?.length || 0;
+                  const tone = statusTone(app.status);
+                  const amount = app.loan_request?.requestedLoanAmount
+                    ? fmt(toNum(app.loan_request.requestedLoanAmount))
+                    : '—';
+                  return (
+                    <tr
+                      key={app.id}
+                      className={selected?.id === app.id ? 'selected' : ''}
+                      onClick={() => setSelected(app)}
+                    >
+                      <td>
+                        <strong>{borrowerName(app)}</strong>
+                        <span>{app.borrower?.email || '—'}</span>
+                      </td>
+                      <td>{programLabel(app.loan_program)}</td>
+                      <td>{amount}</td>
+                      <td>
+                        <span className="admin-pill" style={{ background: tone.bg, color: tone.color }}>
+                          {app.status}
+                        </span>
+                      </td>
+                      <td>{app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : 'Draft'}</td>
+                      <td>{warnings ? `${warnings} flag${warnings !== 1 ? 's' : ''}` : '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </section>
+
+        <aside className="admin-detail">
+          {!selected ? (
+            <div className="admin-detail-empty">
+              <h2>Select an application</h2>
+              <p>Click a row to review borrower details, AI summary, guideline flags, and missing documents.</p>
+            </div>
+          ) : (
+            <>
+              <div className="admin-detail-head">
+                <h2>
+                  {selected.borrower?.firstName} {selected.borrower?.lastName}
+                </h2>
+                <p>
+                  {selected.borrower?.email} · {selected.borrower?.phone}
+                </p>
+                <code>{selected.id}</code>
+              </div>
+
+              <div className="admin-detail-grid">
+                {[
+                  { label: 'Program', value: programLabel(selected.loan_program) },
+                  { label: 'Status', value: selected.status },
+                  {
+                    label: 'Loan amount',
+                    value: selected.loan_request?.requestedLoanAmount
+                      ? fmt(toNum(selected.loan_request.requestedLoanAmount))
+                      : '—',
+                  },
+                  {
+                    label: 'Submitted',
+                    value: selected.submitted_at
+                      ? new Date(selected.submitted_at).toLocaleString()
+                      : 'Draft',
+                  },
+                  { label: 'Entity', value: selected.entity?.entityName || selected.entity?.borrowingAs || '—' },
+                  { label: 'Deal stage', value: selected.deal_stage || '—' },
+                ].map(({ label, value }) => (
+                  <div key={label} className="admin-detail-card">
+                    <span>{label}</span>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+
+              {selected.guideline_warnings && selected.guideline_warnings.length > 0 && (
+                <div className="admin-panel admin-panel-warn">
+                  <h3>Guideline flags</h3>
+                  {selected.guideline_warnings.map((w, i) => (
+                    <p key={i}>{w}</p>
+                  ))}
+                </div>
+              )}
+
+              {selected.ai_summary && (
+                <div className="admin-panel admin-panel-info">
+                  <h3>AI summary</h3>
+                  <p>{selected.ai_summary}</p>
+                </div>
+              )}
+
+              {selected.missing_documents && selected.missing_documents.length > 0 && (
+                <div className="admin-panel">
+                  <h3>Missing documents</h3>
+                  <ul>
+                    {selected.missing_documents.map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {selected.additional_notes && (
+                <div className="admin-panel">
+                  <h3>Additional notes</h3>
+                  <p>{selected.additional_notes}</p>
+                </div>
+              )}
+
+              <a href={`/portfolio/${selected.id}`} target="_blank" rel="noopener noreferrer" className="admin-link">
+                Open customer portfolio →
+              </a>
+            </>
+          )}
+        </aside>
+      </div>
+
+      <style jsx global>{`
+        .admin-shell {
+          min-height: 100vh;
+          background: var(--paper);
+          padding: 24px 28px 40px;
+        }
+        .admin-topbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 16px;
+          margin-bottom: 20px;
+        }
+        .admin-topbar h1 {
+          font-size: 24px;
+          font-weight: 700;
+          margin: 0;
+          letter-spacing: -0.02em;
+        }
+        .admin-topbar p {
+          margin: 4px 0 0;
+          font-size: 13px;
+          color: var(--slate);
+        }
+        .admin-topbar-actions {
+          display: flex;
+          gap: 8px;
+        }
+        .admin-stats {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .admin-stat {
+          background: #fff;
+          border: 1px solid var(--line);
+          border-radius: var(--radius-lg);
+          padding: 16px 18px;
+          box-shadow: var(--shadow-xs);
+        }
+        .admin-stat span {
+          display: block;
+          font-size: 12px;
+          color: var(--slate);
+          margin-bottom: 6px;
+        }
+        .admin-stat strong {
+          font-size: 24px;
+          font-weight: 700;
+          color: var(--ink);
+        }
+        .admin-toolbar {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+        .admin-search {
+          flex: 1 1 280px;
+          min-width: 200px;
+        }
+        .admin-toolbar select {
+          width: auto;
+          min-width: 140px;
+        }
+        .admin-count {
+          font-size: 12px;
+          color: var(--slate);
+          margin-left: auto;
+        }
+        .admin-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+          gap: 16px;
+          align-items: start;
+        }
+        .admin-table-wrap {
+          background: #fff;
+          border: 1px solid var(--line);
+          border-radius: var(--radius-lg);
+          overflow: auto;
+          box-shadow: var(--shadow-sm);
+        }
+        .admin-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13px;
+        }
+        .admin-table th {
+          text-align: left;
+          padding: 12px 14px;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--slate);
+          border-bottom: 1px solid var(--line);
+          background: var(--surface-dim);
+        }
+        .admin-table td {
+          padding: 12px 14px;
+          border-bottom: 1px solid var(--line);
+          vertical-align: top;
+        }
+        .admin-table td strong {
+          display: block;
+          font-size: 14px;
+          color: var(--ink);
+        }
+        .admin-table td span {
+          display: block;
+          font-size: 12px;
+          color: var(--slate);
+          margin-top: 2px;
+        }
+        .admin-table tbody tr {
+          cursor: pointer;
+          transition: background 0.12s;
+        }
+        .admin-table tbody tr:hover {
+          background: #f8fafc;
+        }
+        .admin-table tbody tr.selected {
+          background: var(--ledger-green-soft);
+        }
+        .admin-pill {
+          display: inline-block;
+          padding: 4px 10px;
+          border-radius: 99px;
+          font-size: 11px;
+          font-weight: 600;
+        }
+        .admin-empty {
+          padding: 32px;
+          color: var(--slate);
+          font-size: 14px;
+        }
+        .admin-detail {
+          background: #fff;
+          border: 1px solid var(--line);
+          border-radius: var(--radius-lg);
+          padding: 20px;
+          box-shadow: var(--shadow-sm);
+          position: sticky;
+          top: 16px;
+          max-height: calc(100vh - 48px);
+          overflow: auto;
+        }
+        .admin-detail-empty h2 {
+          font-size: 16px;
+          margin: 0 0 8px;
+        }
+        .admin-detail-empty p {
+          font-size: 13px;
+          color: var(--slate);
+          line-height: 1.55;
+          margin: 0;
+        }
+        .admin-detail-head h2 {
+          font-size: 20px;
+          margin: 0 0 6px;
+        }
+        .admin-detail-head p {
+          margin: 0;
+          font-size: 13px;
+          color: var(--slate);
+        }
+        .admin-detail-head code {
+          display: inline-block;
+          margin-top: 10px;
+          font-size: 11px;
+          color: var(--slate);
+          background: var(--paper-dim);
+          padding: 4px 8px;
+          border-radius: 4px;
+        }
+        .admin-detail-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin: 18px 0;
+        }
+        .admin-detail-card {
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          padding: 12px;
+          background: var(--surface-dim);
+        }
+        .admin-detail-card span {
+          display: block;
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--slate);
+          margin-bottom: 4px;
+        }
+        .admin-detail-card strong {
+          font-size: 14px;
+          color: var(--ink);
+        }
+        .admin-panel {
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          padding: 14px;
+          margin-bottom: 12px;
+        }
+        .admin-panel h3 {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin: 0 0 10px;
+          color: var(--slate);
+        }
+        .admin-panel p,
+        .admin-panel li {
+          font-size: 13px;
+          line-height: 1.55;
+          color: var(--ink-soft);
+          margin: 0 0 6px;
+        }
+        .admin-panel ul {
+          margin: 0;
+          padding-left: 18px;
+        }
+        .admin-panel-warn {
+          background: #fffbeb;
+          border-color: #fde68a;
+        }
+        .admin-panel-warn h3 {
+          color: #b45309;
+        }
+        .admin-panel-info {
+          background: #eff6ff;
+          border-color: #bfdbfe;
+        }
+        .admin-panel-info h3 {
+          color: #1d4ed8;
+        }
+        .admin-link {
+          display: inline-block;
+          margin-top: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--blue);
+          text-decoration: none;
+        }
+        @media (max-width: 1100px) {
+          .admin-layout {
+            grid-template-columns: 1fr;
+          }
+          .admin-detail {
+            position: static;
+            max-height: none;
+          }
+          .admin-stats {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 }

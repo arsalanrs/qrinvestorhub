@@ -31,7 +31,6 @@ export function AutoSaveIndicator({ state }: AutoSaveIndicatorProps) {
       }} />
       <span style={{
         fontSize: '11.5px',
-        fontFamily: 'IBM Plex Mono, monospace',
         color: config.color,
         letterSpacing: '0.03em',
         fontWeight: 500,

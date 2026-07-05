@@ -11,92 +11,49 @@ interface StepRailProps {
 }
 
 export function StepRail({ steps, currentStep }: StepRailProps) {
+  const pct = steps.length > 1 ? (currentStep / (steps.length - 1)) * 100 : 0;
+
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 0,
-      marginBottom: '28px',
-      overflowX: 'auto',
-      paddingBottom: '2px',
-    }}>
-      {steps.map((step, i) => {
-        const isCompleted = i < currentStep;
-        const isActive    = i === currentStep;
-        const isLast      = i === steps.length - 1;
-
-        return (
-          <div key={step.key} style={{ display: 'flex', alignItems: 'flex-start', flexShrink: 0 }}>
-            {/* Step item */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px' }}>
-
-              {/* Bubble */}
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '11px',
-                fontFamily: 'IBM Plex Mono, monospace',
-                fontWeight: 700,
-                background: isCompleted
-                  ? 'linear-gradient(135deg, #22a86a, #0f6d49)'
-                  : isActive
-                  ? 'linear-gradient(135deg, #B08D57, #8f6e3c)'
-                  : 'var(--paper-dim)',
-                color: isCompleted || isActive ? '#fff' : 'var(--slate-light)',
-                boxShadow: isActive
-                  ? '0 0 0 4px rgba(176,141,87,0.22), 0 2px 8px rgba(176,141,87,0.3)'
-                  : isCompleted
-                  ? '0 2px 8px rgba(31,111,84,0.25)'
-                  : 'none',
-                transition: 'all 0.25s ease',
-                flexShrink: 0,
-              }}>
-                {isCompleted ? '✓' : String(i + 1)}
-              </div>
-
-              {/* Label */}
-              <span style={{
-                fontSize: '10px',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: isActive ? 700 : 400,
-                color: isActive
-                  ? 'var(--ink)'
-                  : isCompleted
-                  ? 'var(--ledger-green)'
-                  : 'var(--slate-light)',
-                whiteSpace: 'nowrap',
-                textAlign: 'center',
-                maxWidth: '70px',
-                lineHeight: '1.3',
-                letterSpacing: isActive ? '0.01em' : 0,
-                transition: 'color 0.2s',
-              }}>
-                {step.label}
-              </span>
-            </div>
-
-            {/* Connector line */}
-            {!isLast && (
-              <div style={{
-                width: '28px',
-                height: '1.5px',
-                background: isCompleted
-                  ? 'linear-gradient(90deg, #22a86a, #62c99a)'
-                  : 'var(--line)',
-                margin: '0 3px',
-                marginTop: '15px',
-                flexShrink: 0,
-                transition: 'background 0.25s',
-                borderRadius: '1px',
-              }} />
-            )}
-          </div>
-        );
-      })}
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          Step {currentStep + 1} of {steps.length}
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ledger-green)' }}>{steps[currentStep]?.label}</span>
+      </div>
+      <div style={{ height: 4, background: 'var(--line)', borderRadius: 99, overflow: 'hidden' }}>
+        <div
+          style={{
+            height: '100%',
+            width: `${pct}%`,
+            background: 'var(--ledger-green)',
+            borderRadius: 99,
+            transition: 'width 0.25s ease',
+          }}
+        />
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+        {steps.map((step, i) => {
+          const done = i < currentStep;
+          const active = i === currentStep;
+          return (
+            <span
+              key={step.key}
+              style={{
+                fontSize: 11,
+                fontWeight: active ? 600 : 500,
+                color: active ? 'var(--ink)' : done ? 'var(--ledger-green)' : 'var(--slate-light)',
+                padding: '4px 10px',
+                borderRadius: 99,
+                background: active ? 'var(--ledger-green-soft)' : 'transparent',
+                border: active ? '1px solid rgba(15,118,110,0.2)' : '1px solid transparent',
+              }}
+            >
+              {step.label}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -13,8 +13,8 @@ const PROGRAMS = [
     typicalClose: '14–21 days', highlight: 'Rent roll qualifies',
     tags: ['Refinance', 'Cash-Out', 'Portfolio'],
     description: 'Ideal for investors with multiple rentals who want to streamline debt, consolidate mortgages, or pull equity — all in one loan structure.',
-    color: '#1F6F54',
-    bg: '#E4EFE9',
+    color: '#0f766e',
+    bg: '#ecfdf5',
   },
   {
     num: '02', key: 'bridge',
@@ -23,8 +23,8 @@ const PROGRAMS = [
     typicalClose: '5–10 days', highlight: 'Fast close',
     tags: ['Purchase', 'Refinance', 'Cash-Out'],
     description: 'Short-term capital to move fast. Bridge to sale, DSCR refi, or stabilization. Exit strategy required. Close in days, not weeks.',
-    color: '#2E5C8A',
-    bg: '#E7EEF5',
+    color: '#1d4ed8',
+    bg: '#eff6ff',
   },
   {
     num: '03', key: 'construction',
@@ -33,8 +33,8 @@ const PROGRAMS = [
     typicalClose: '10–21 days', highlight: 'Draw schedule',
     tags: ['Ground-Up', 'Mid-Build', 'ARV'],
     description: 'Finance new builds from land acquisition through C/O. Covers construction budgets, draw schedules, builder contracts, and permits.',
-    color: '#B08D57',
-    bg: '#F0E6D3',
+    color: '#92702a',
+    bg: '#fef9ee',
   },
   {
     num: '04', key: 'dscr',
@@ -43,8 +43,8 @@ const PROGRAMS = [
     typicalClose: '7–14 days', highlight: 'No tax returns',
     tags: ['No Income Docs', 'Rental', 'DSCR'],
     description: 'Qualify on property cash flow alone — no personal income docs, no tax returns. Based on market rent and estimated DSCR.',
-    color: '#1F6F54',
-    bg: '#E4EFE9',
+    color: '#0f766e',
+    bg: '#ecfdf5',
     popular: true,
   },
   {
@@ -54,8 +54,8 @@ const PROGRAMS = [
     typicalClose: '5–10 days', highlight: 'ARV-based',
     tags: ['Fix & Flip', 'Fix & Hold', 'Scope of Work'],
     description: 'Purchase plus renovation in one loan. Covers ARV, rehab budget, scope of work, contractor details, and exit strategy.',
-    color: '#B3492D',
-    bg: '#F7E7E1',
+    color: '#b45309',
+    bg: '#fffbeb',
   },
 ];
 
@@ -81,8 +81,8 @@ export function LoanProgramStrip() {
             style={{
               position: 'relative',
               overflow: 'hidden',
-              borderRadius: 18,
-              border: `1.5px solid ${isActive ? p.color : '#DAD4C4'}`,
+              borderRadius: 12,
+              border: `1px solid ${isActive ? p.color : '#e2e8f0'}`,
               background: isActive ? '#fff' : p.bg,
               cursor: 'pointer',
               minWidth: 0,
@@ -122,14 +122,12 @@ export function LoanProgramStrip() {
                   }}
                 >
                   <span style={{
-                    fontFamily: 'IBM Plex Mono, monospace',
                     fontSize: 10, fontWeight: 700,
                     color: p.color,
                     letterSpacing: '0.06em',
                     opacity: 0.7,
                   }}>{p.num}</span>
                   <span style={{
-                    fontFamily: 'Fraunces, serif',
                     fontSize: 13, fontWeight: 600,
                     color: p.color,
                     writingMode: 'vertical-rl',
@@ -158,7 +156,7 @@ export function LoanProgramStrip() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{
-                      fontFamily: 'IBM Plex Mono, monospace', fontSize: 10,
+                      fontSize: 10,
                       fontWeight: 700, color: p.color, opacity: 0.7,
                       letterSpacing: '0.06em',
                     }}>{p.num}</span>
@@ -167,22 +165,20 @@ export function LoanProgramStrip() {
                         fontSize: 9, fontWeight: 700, letterSpacing: '0.05em',
                         textTransform: 'uppercase',
                         background: p.bg, color: p.color,
-                        padding: '3px 7px', borderRadius: 999,
+                        padding: '3px 7px', borderRadius: 6,
                         border: `1px solid ${p.color}44`,
-                        fontFamily: 'IBM Plex Mono, monospace',
                       }}>Popular</span>
                     )}
                   </div>
                   <h3 style={{
-                    fontFamily: 'Fraunces, serif', fontSize: 15.5,
-                    fontWeight: 600, color: '#14213D',
-                    margin: 0, lineHeight: 1.25, letterSpacing: '-0.01em',
+                    fontSize: 15, fontWeight: 700, color: '#0f172a',
+                    margin: 0, lineHeight: 1.3, letterSpacing: '-0.02em',
                   }}>{p.label}</h3>
                   <div style={{
-                    fontFamily: 'Fraunces, serif', fontSize: 26,
-                    fontWeight: 700, color: p.color, lineHeight: 1, letterSpacing: '-0.02em',
+                    fontSize: 28, fontWeight: 700, color: p.color, lineHeight: 1,
+                    letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums',
                   }}>{p.maxLeverage}</div>
-                  <div style={{ fontSize: 11, color: '#9AA1AC', fontWeight: 500 }}>{p.maxLeverageLabel}</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{p.maxLeverageLabel}</div>
                   <div style={{ marginTop: 'auto', fontSize: 11.5, fontWeight: 600, color: p.color, display: 'flex', alignItems: 'center', gap: 4 }}>
                     {p.highlight} <ArrowRight style={{ width: 11, height: 11 }} />
                   </div>
@@ -208,39 +204,34 @@ export function LoanProgramStrip() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{
-                        fontFamily: 'IBM Plex Mono, monospace', fontSize: 10.5,
-                        fontWeight: 700, color: p.color,
-                        background: p.bg, padding: '4px 10px', borderRadius: 999,
+                        fontSize: 10.5, fontWeight: 700, color: p.color,
+                        background: p.bg, padding: '4px 10px', borderRadius: 6,
                         letterSpacing: '0.06em',
                       }}>{p.num}</span>
                       <h3 style={{
-                        fontFamily: 'Fraunces, serif', fontSize: 19,
-                        fontWeight: 700, color: '#14213D',
-                        margin: 0, letterSpacing: '-0.015em',
+                        fontSize: 18, fontWeight: 700, color: '#0f172a',
+                        margin: 0, letterSpacing: '-0.02em',
                       }}>{p.label}</h3>
                     </div>
                     {p.popular && (
                       <span style={{
                         fontSize: 10, fontWeight: 700, letterSpacing: '0.05em',
                         textTransform: 'uppercase', color: p.color,
-                        background: p.bg, padding: '4px 10px', borderRadius: 999,
+                        background: p.bg, padding: '4px 10px', borderRadius: 6,
                         border: `1px solid ${p.color}33`,
-                        fontFamily: 'IBM Plex Mono, monospace',
                       }}>Most Popular</span>
                     )}
                   </div>
 
                   {/* Divider */}
-                  <div style={{ borderTop: '1px solid #DAD4C4', marginBottom: 18 }} />
+                  <div style={{ borderTop: '1px solid #e2e8f0', marginBottom: 18 }} />
 
-                  {/* Hero number */}
                   <div style={{ marginBottom: 16 }}>
                     <div style={{
-                      fontFamily: 'Fraunces, serif', fontSize: 52,
-                      fontWeight: 700, color: p.color, lineHeight: 1,
-                      letterSpacing: '-0.04em',
+                      fontSize: 44, fontWeight: 700, color: p.color, lineHeight: 1,
+                      letterSpacing: '-0.04em', fontVariantNumeric: 'tabular-nums',
                     }}>{p.maxLeverage}</div>
-                    <div style={{ fontSize: 12, color: '#9AA1AC', marginTop: 5, fontWeight: 500 }}>
+                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 5, fontWeight: 500 }}>
                       {p.maxLeverageLabel}
                     </div>
                   </div>
@@ -249,7 +240,7 @@ export function LoanProgramStrip() {
                   <div style={{ display: 'flex', gap: 20, marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                       <Clock style={{ width: 13, height: 13, color: '#9AA1AC' }} />
-                      <span style={{ fontSize: 12.5, color: '#5B6472' }}>{p.typicalClose}</span>
+                      <span style={{ fontSize: 12.5, color: '#64748b' }}>{p.typicalClose}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                       <ShieldCheck style={{ width: 13, height: 13, color: p.color }} />
@@ -261,10 +252,9 @@ export function LoanProgramStrip() {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
                     {p.tags.map(t => (
                       <span key={t} style={{
-                        fontFamily: 'IBM Plex Mono, monospace', fontSize: 10,
-                        fontWeight: 600, color: p.color,
+                        fontSize: 10, fontWeight: 600, color: p.color,
                         background: p.bg, padding: '4px 10px',
-                        borderRadius: 999, letterSpacing: '0.03em',
+                        borderRadius: 6, letterSpacing: '0.03em',
                         border: `1px solid ${p.color}22`,
                       }}>{t}</span>
                     ))}
@@ -272,23 +262,19 @@ export function LoanProgramStrip() {
 
                   {/* Description */}
                   <p style={{
-                    fontSize: 13.5, color: '#5B6472', lineHeight: 1.7,
+                    fontSize: 14, color: '#64748b', lineHeight: 1.65,
                     margin: '0 0 auto', flex: 1,
                   }}>{p.description}</p>
 
-                  {/* CTA */}
                   <Link
                     href={`/investor-hub/apply?program=${p.key}`}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 8,
-                      marginTop: 20, padding: '11px 22px',
+                      marginTop: 20, padding: '10px 18px',
                       background: p.color, color: '#fff',
-                      borderRadius: 999, textDecoration: 'none',
-                      fontSize: 13.5, fontWeight: 700,
-                      fontFamily: 'Inter, sans-serif',
-                      boxShadow: `0 4px 14px ${p.color}44`,
+                      borderRadius: 8, textDecoration: 'none',
+                      fontSize: 14, fontWeight: 600,
                       width: 'fit-content',
-                      letterSpacing: '0.01em',
                     }}
                   >
                     Start intake

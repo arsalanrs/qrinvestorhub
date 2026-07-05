@@ -9,38 +9,42 @@ interface WizardCardProps {
 
 export function WizardCard({ children, title, subtitle, style }: WizardCardProps) {
   return (
-    <div style={{
-      background: '#fff',
-      border: '1.5px solid var(--line)',
-      borderRadius: '22px',
-      padding: '32px 36px 28px',
-      boxShadow: '0 1px 3px rgba(20,33,61,0.04), 0 6px 24px rgba(20,33,61,0.05)',
-      marginBottom: '20px',
-      ...style,
-    }}>
+    <div
+      style={{
+        background: '#fff',
+        border: '1px solid var(--line)',
+        borderRadius: 'var(--radius-xl)',
+        padding: '28px 32px',
+        boxShadow: 'var(--shadow-sm)',
+        marginBottom: '16px',
+        ...style,
+      }}
+    >
       {(title || subtitle) && (
-        <div style={{ marginBottom: 28 }}>
+        <div style={{ marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid var(--line)' }}>
           {title && (
-            <h2 style={{
-              fontFamily: 'Fraunces, serif',
-              fontSize: '22px',
-              fontWeight: 700,
-              color: 'var(--ink)',
-              margin: '0 0 8px',
-              letterSpacing: '-0.02em',
-              lineHeight: 1.25,
-            }}>
+            <h2
+              style={{
+                fontSize: '20px',
+                fontWeight: 700,
+                color: 'var(--ink)',
+                margin: '0 0 6px',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.3,
+              }}
+            >
               {title}
             </h2>
           )}
           {subtitle && (
-            <p style={{
-              fontSize: '14px',
-              color: 'var(--slate)',
-              margin: 0,
-              lineHeight: 1.65,
-              fontWeight: 400,
-            }}>
+            <p
+              style={{
+                fontSize: '14px',
+                color: 'var(--slate)',
+                margin: 0,
+                lineHeight: 1.6,
+              }}
+            >
               {subtitle}
             </p>
           )}

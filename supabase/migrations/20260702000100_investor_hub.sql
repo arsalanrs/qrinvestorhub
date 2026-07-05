@@ -71,8 +71,8 @@ alter table public.investor_documents enable row level security;
 alter table public.investor_application_events enable row level security;
 
 create policy "allow_anon_insert_applications" on public.investor_applications for insert with check (true);
-create policy "allow_anon_update_draft" on public.investor_applications for update using (status = 'draft');
-create policy "allow_anon_select_own" on public.investor_applications for select using (true);
+create policy "allow_anon_update_applications" on public.investor_applications for update using (status in ('draft', 'submitted')) with check (status in ('draft', 'submitted', 'needs_review'));
+create policy "allow_anon_select_applications" on public.investor_applications for select using (true);
 
 create policy "allow_anon_insert_properties" on public.investor_properties for insert with check (true);
 create policy "allow_anon_update_properties" on public.investor_properties for update using (true);
@@ -81,3 +81,6 @@ create policy "allow_anon_select_properties" on public.investor_properties for s
 create policy "allow_anon_insert_documents" on public.investor_documents for insert with check (true);
 create policy "allow_anon_update_documents" on public.investor_documents for update using (true);
 create policy "allow_anon_select_documents" on public.investor_documents for select using (true);
+
+create policy "allow_anon_insert_events" on public.investor_application_events for insert with check (true);
+create policy "allow_anon_select_events" on public.investor_application_events for select using (true);

@@ -227,15 +227,11 @@ export function InvestorApplicationWizard({ initialProgram }: Props) {
     <FormProvider {...methods}>
       <div style={{
         minHeight: '100vh',
-        background: `
-          radial-gradient(900px 420px at 8% -8%, rgba(176,141,87,0.08), transparent 60%),
-          radial-gradient(1100px 520px at 100% 0%, rgba(31,111,84,0.06), transparent 55%),
-          #F7F5F0
-        `,
+        background: 'var(--paper)',
       }}>
         <QuestRockTopbar programLabel={programConfig?.shortLabel} autoSaveState={autoSaveState} />
 
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px', display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
+        <div style={{ maxWidth: '1120px', margin: '0 auto', padding: '28px 24px 48px', display: 'flex', gap: '28px', alignItems: 'flex-start' }}>
           {/* Left column */}
           <div style={{ flex: '1 1 0', minWidth: 0 }}>
             <StepRail
@@ -257,22 +253,10 @@ export function InvestorApplicationWizard({ initialProgram }: Props) {
                   type="button"
                   onClick={handleBack}
                   disabled={currentStep === 0}
-                  style={{
-                    padding: '11px 26px',
-                    border: '1.5px solid var(--line)',
-                    borderRadius: '999px',
-                    background: '#fff',
-                    color: currentStep === 0 ? 'var(--slate-light)' : 'var(--ink)',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    fontFamily: 'Inter, sans-serif',
-                    cursor: currentStep === 0 ? 'default' : 'pointer',
-                    boxShadow: '0 1px 3px rgba(20,33,61,0.04)',
-                    transition: 'all 0.18s ease',
-                    opacity: currentStep === 0 ? 0.45 : 1,
-                  }}
+                  className="qr-btn qr-btn-secondary"
+                  style={{ opacity: currentStep === 0 ? 0.45 : 1 }}
                 >
-                  ← Back
+                  Back
                 </button>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

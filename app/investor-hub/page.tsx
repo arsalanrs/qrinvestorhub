@@ -9,222 +9,197 @@ import { LoanProgramStrip } from '@/components/ui/LoanProgramStrip';
 /*  Inline styles (scoped to this page only)               */
 /* ──────────────────────────────────────────────────────── */
 const PAGE_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-
 .ih-root{
-  --ink:#14213D;--ink-soft:#243759;
-  --paper:#F7F5F0;--paper-dim:#EFEBE1;
-  --ledger-green:#1F6F54;--ledger-green-soft:#E4EFE9;
-  --brass:#B08D57;--brass-soft:#F0E6D3;
-  --slate:#5B6472;--slate-light:#9AA1AC;
-  --clay:#B3492D;--clay-soft:#F7E7E1;
-  --line:#DAD4C4;
+  --ink:#0f172a;--ink-soft:#334155;
+  --paper:#f8fafc;--paper-dim:#f1f5f9;
+  --ledger-green:#0f766e;--ledger-green-soft:#ecfdf5;
+  --brass:#92702a;--brass-soft:#fef9ee;
+  --slate:#64748b;--slate-light:#94a3b8;
+  --clay:#b45309;--clay-soft:#fffbeb;
+  --line:#e2e8f0;
   background:var(--paper);color:var(--ink);
-  font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  -webkit-font-smoothing:antialiased;min-height:100vh;
 }
 .ih-root *{box-sizing:border-box;}
 .ih-root a{color:inherit;text-decoration:none;}
-.ih-app{max-width:1180px;margin:0 auto;padding:0 28px 80px;}
+.ih-root a.ih-header-cta,
+.ih-root a.ih-header-cta:hover{
+  color:#fff !important;
+  background:var(--ink);
+}
+.ih-app{max-width:1140px;margin:0 auto;padding:0 28px 72px;}
 
 /* --- Topbar --- */
 .ih-topbar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:30px 0 22px;border-bottom:1px solid var(--line);margin-bottom:46px;gap:18px;
+  padding:20px 0;border-bottom:1px solid var(--line);margin-bottom:40px;gap:18px;
 }
-.ih-wordmark{display:flex;align-items:baseline;gap:10px;white-space:nowrap;}
-.ih-mark{font-family:'Fraunces',serif;font-weight:600;font-size:23px;letter-spacing:-0.01em;}
-.ih-sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--slate);letter-spacing:0.08em;text-transform:uppercase;}
-.ih-nav{display:flex;align-items:center;gap:22px;font-size:13px;color:var(--slate);}
+.ih-wordmark{display:flex;align-items:center;gap:12px;white-space:nowrap;}
+.ih-mark{font-weight:700;font-size:18px;letter-spacing:-0.02em;color:var(--ink);}
+.ih-sub{font-size:12px;color:var(--slate);font-weight:500;}
+.ih-nav{display:flex;align-items:center;gap:24px;font-size:14px;color:var(--slate);font-weight:500;}
 .ih-nav a:hover{color:var(--ink);}
 .ih-header-cta{
-  font-size:12.5px;font-weight:700;background:var(--ink);color:#fff;
-  padding:10px 22px;border:1px solid var(--ink);cursor:pointer;
-  display:inline-flex;align-items:center;border-radius:999px;
-  letter-spacing:0.01em;transition:opacity .15s;
+  font-size:14px;font-weight:600;background:var(--ink);color:#fff !important;
+  padding:10px 16px;border:1px solid var(--ink);cursor:pointer;
+  display:inline-flex;align-items:center;border-radius:8px;
+  transition:background .15s;
 }
-.ih-header-cta:hover{opacity:.88;}
+.ih-header-cta:hover{background:#1e293b;color:#fff !important;}
 .ih-mobile-cta{display:none;}
 
 /* --- Buttons --- */
-.ih-btn-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.ih-btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 .ih-btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  font-family:'Inter',sans-serif;font-weight:700;font-size:13.5px;
-  padding:13px 24px;border:1.5px solid transparent;cursor:pointer;
-  border-radius:999px;
-  transition:opacity .15s, transform .1s, border-color .18s, background .18s, box-shadow .18s;
-  letter-spacing:0.01em;
+  font-weight:600;font-size:14px;
+  padding:11px 18px;border:1px solid transparent;cursor:pointer;
+  border-radius:8px;
+  transition:background .15s,border-color .15s,box-shadow .15s;
 }
-.ih-btn:active{transform:scale(0.97);}
-.ih-btn-primary{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:0 2px 10px rgba(20,33,61,.18);}
-.ih-btn-primary:hover{opacity:.92;}
-.ih-btn-secondary{background:#fff;color:var(--ink);border-color:var(--line);box-shadow:0 1px 4px rgba(20,33,61,.06);}
-.ih-btn-secondary:hover{border-color:var(--ink);box-shadow:0 4px 14px rgba(20,33,61,.10);}
+.ih-btn-primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+.ih-btn-primary:hover{background:#1e293b;}
+.ih-btn-secondary{background:#fff;color:var(--ink);border-color:var(--line);}
+.ih-btn-secondary:hover{border-color:#cbd5e1;background:var(--paper-dim);}
 .ih-btn-ghost-light{
-  background:transparent;color:rgba(247,245,240,.82);
-  border-color:rgba(247,245,240,.25);
+  background:transparent;color:rgba(248,250,252,.9);
+  border-color:rgba(248,250,252,.35);
 }
-.ih-btn-ghost-light:hover{background:rgba(247,245,240,.08);border-color:rgba(247,245,240,.45);color:#fff;}
-.ih-btn-brass{background:var(--brass);color:#fff;border-color:var(--brass);box-shadow:0 2px 12px rgba(176,141,87,.28);}
-.ih-btn-brass:hover{opacity:.92;box-shadow:0 4px 18px rgba(176,141,87,.38);}
-.ih-program-chip{
-  display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;
-  font-size:10.5px;letter-spacing:0.07em;text-transform:uppercase;
-  color:var(--ledger-green);background:var(--ledger-green-soft);padding:7px 12px;border-radius:20px;
-}
+.ih-btn-ghost-light:hover{background:rgba(255,255,255,.08);border-color:rgba(248,250,252,.55);color:#fff;}
+.ih-btn-brass{background:var(--ledger-green);color:#fff;border-color:var(--ledger-green);}
+.ih-btn-brass:hover{background:#0d6660;}
 .ih-kicker{
-  display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;
-  font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--brass);margin-bottom:16px;
+  display:inline-block;
+  font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--ledger-green);margin-bottom:12px;
 }
-.ih-kicker:before{content:"";width:26px;height:1px;background:var(--brass);display:inline-block;}
 
 /* --- Hero --- */
-.ih-hero{display:grid;grid-template-columns:1.08fr .92fr;gap:42px;align-items:center;margin-bottom:70px;}
+.ih-hero{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;margin-bottom:64px;}
 .ih-hero h1{
-  font-family:'Fraunces',serif;font-weight:600;font-size:62px;line-height:1.01;
-  letter-spacing:-0.035em;margin:0 0 20px;
+  font-weight:700;font-size:48px;line-height:1.08;
+  letter-spacing:-0.03em;margin:0 0 16px;
 }
 .ih-hero h1 span{color:var(--ledger-green);}
-.ih-hero-copy{color:var(--slate);font-size:17px;line-height:1.7;margin:0 0 28px;}
-.ih-hero-points{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 0;}
+.ih-hero-copy{color:var(--slate);font-size:16px;line-height:1.65;margin:0 0 24px;max-width:54ch;}
+.ih-hero-points{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0;}
 .ih-hero-point{
   display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);
-  padding:8px 14px;border-radius:999px;font-size:12.5px;color:var(--ink-soft);
-  box-shadow:0 1px 3px rgba(20,33,61,.05);
+  padding:7px 12px;border-radius:8px;font-size:13px;color:var(--ink-soft);font-weight:500;
 }
-.ih-dot{width:7px;height:7px;border-radius:50%;background:var(--ledger-green);flex-shrink:0;}
+.ih-dot{width:6px;height:6px;border-radius:50%;background:var(--ledger-green);flex-shrink:0;}
 
 /* --- Ledger --- */
 .ih-ledger-wrap{position:relative;}
-.ih-ledger-shadow{
-  position:absolute;inset:28px -14px -14px 28px;
-  border:1px solid var(--line);background:var(--paper-dim);z-index:0;
-  pointer-events:none;
-}
+.ih-ledger-shadow{display:none;}
 .ih-ledger{
-  position:relative;z-index:1;background:var(--ink);color:var(--paper);
-  overflow:hidden;box-shadow:0 1px 2px rgba(20,33,61,.06), 0 12px 36px rgba(20,33,61,.08);
+  position:relative;z-index:1;background:var(--ink);color:#f8fafc;
+  overflow:hidden;border-radius:12px;
+  box-shadow:0 4px 24px rgba(15,23,42,.12);
+  border:1px solid #1e293b;
 }
 .ih-ledger-head{
-  padding:24px 26px 18px;border-bottom:1px dashed rgba(247,245,240,.25);
+  padding:20px 22px 16px;border-bottom:1px solid rgba(255,255,255,.08);
   display:flex;justify-content:space-between;align-items:flex-start;gap:18px;
 }
-.ih-lt{font-family:'Fraunces',serif;font-size:20px;font-weight:600;}
-.ih-ls{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--brass);letter-spacing:.08em;text-transform:uppercase;margin-top:4px;}
+.ih-lt{font-size:17px;font-weight:700;letter-spacing:-0.01em;}
+.ih-ls{font-size:11px;color:var(--slate-light);letter-spacing:0.04em;text-transform:uppercase;margin-top:4px;font-weight:600;}
 .ih-seal{
-  width:58px;height:58px;border-radius:50%;border:1.5px solid var(--brass);
+  width:52px;height:52px;border-radius:8px;border:1px solid rgba(255,255,255,.15);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--brass);text-align:center;line-height:1.15;
+  font-size:8px;font-weight:600;color:#94a3b8;text-align:center;line-height:1.2;
+  letter-spacing:0.04em;text-transform:uppercase;
 }
-.ih-ledger-body{padding:24px 26px 10px;}
+.ih-ledger-body{padding:18px 22px 8px;}
 .ih-lrow{
   display:flex;justify-content:space-between;align-items:baseline;gap:18px;
-  padding:11px 0;border-bottom:1px dashed rgba(247,245,240,.14);font-size:12.5px;
+  padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;
 }
 .ih-lrow:last-child{border-bottom:none;}
-.ih-lk{color:rgba(247,245,240,.62);}
-.ih-lv{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--paper);text-align:right;}
-.ih-lv-hi{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#fff;text-align:right;}
-.ih-lv-pos{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:#8FD9BD;text-align:right;}
+.ih-lk{color:#94a3b8;font-weight:500;}
+.ih-lv{font-size:13px;font-weight:600;color:#e2e8f0;text-align:right;font-variant-numeric:tabular-nums;}
+.ih-lv-hi{font-size:15px;font-weight:700;color:#fff;text-align:right;font-variant-numeric:tabular-nums;}
+.ih-lv-pos{font-size:13px;font-weight:600;color:#5eead4;text-align:right;font-variant-numeric:tabular-nums;}
 .ih-ledger-note{
-  margin:16px 26px 24px;padding:12px 14px;background:rgba(247,245,240,.06);
-  border-left:2px solid var(--brass);font-size:12px;line-height:1.55;color:rgba(247,245,240,.85);
+  margin:12px 22px 18px;padding:12px 14px;background:rgba(255,255,255,.04);
+  border-left:2px solid var(--ledger-green);font-size:12px;line-height:1.55;color:#cbd5e1;
 }
-.ih-ledger-tabs{display:flex;gap:7px;padding:0 26px 22px;flex-wrap:wrap;}
+.ih-ledger-tabs{display:flex;gap:6px;padding:0 22px 18px;flex-wrap:wrap;}
 .ih-ledger-tab{
-  font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:rgba(247,245,240,.72);
-  border:1px solid rgba(247,245,240,.16);padding:6px 9px;border-radius:18px;
+  font-size:11px;font-weight:600;color:#94a3b8;
+  border:1px solid rgba(255,255,255,.1);padding:5px 10px;border-radius:6px;
 }
-.ih-ledger-tab-active{color:var(--ink);background:var(--brass-soft);border-color:var(--brass-soft);
-  font-family:'IBM Plex Mono',monospace;font-size:10.5px;
-  border-width:1px;border-style:solid;padding:6px 9px;border-radius:18px;}
+.ih-ledger-tab-active{color:var(--ink);background:#ecfdf5;border-color:#ecfdf5;
+  font-size:11px;font-weight:700;
+  border-width:1px;border-style:solid;padding:5px 10px;border-radius:6px;}
 
 /* --- Sections --- */
-.ih-section{margin:76px 0;}
-.ih-section-head{display:flex;justify-content:space-between;gap:28px;align-items:end;margin-bottom:24px;}
-.ih-section-title{font-family:'Fraunces',serif;font-size:37px;line-height:1.12;font-weight:600;letter-spacing:-.02em;margin:0;}
-.ih-section-copy{color:var(--slate);line-height:1.65;margin:0;max-width:52ch;font-size:14.5px;}
-
-/* --- Loan Cards --- */
-.ih-loan-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
-.ih-loan-card{
-  background:#fff;border:1px solid var(--line);padding:20px 18px;min-height:210px;
-  box-shadow:0 1px 2px rgba(20,33,61,.05), 0 8px 24px rgba(20,33,61,.05);
-  display:flex;flex-direction:column;
-  transition:transform .15s, border-color .15s, box-shadow .15s;cursor:pointer;
-}
-.ih-loan-card:hover{transform:translateY(-2px);border-color:var(--brass);box-shadow:0 1px 2px rgba(20,33,61,.06), 0 12px 36px rgba(20,33,61,.08);}
-.ih-loan-num{font-family:'IBM Plex Mono',monospace;color:var(--brass);font-size:11px;margin-bottom:16px;}
-.ih-loan-title{font-family:'Fraunces',serif;font-size:20px;line-height:1.18;margin:0 0 10px;font-weight:600;}
-.ih-loan-desc{font-size:12.5px;color:var(--slate);line-height:1.55;margin:0 0 18px;}
-.ih-card-link{margin-top:auto;font-size:12.5px;font-weight:800;color:var(--ledger-green);}
+.ih-section{margin:64px 0;}
+.ih-section-head{display:flex;justify-content:space-between;gap:28px;align-items:end;margin-bottom:20px;}
+.ih-section-title{font-size:32px;line-height:1.15;font-weight:700;letter-spacing:-0.025em;margin:0;}
+.ih-section-copy{color:var(--slate);line-height:1.65;margin:0;max-width:52ch;font-size:15px;}
 
 /* --- Flow --- */
-.ih-flow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
-.ih-flow-card{background:#fff;border:1px solid var(--line);box-shadow:0 1px 2px rgba(20,33,61,.05), 0 8px 24px rgba(20,33,61,.05);padding:24px;}
+.ih-flow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.ih-flow-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px;}
 .ih-flow-icon{
-  width:42px;height:42px;border-radius:50%;border:1px solid var(--brass);
-  display:flex;align-items:center;justify-content:center;color:var(--brass);
-  font-family:'IBM Plex Mono',monospace;font-size:12px;margin-bottom:18px;
+  width:36px;height:36px;border-radius:8px;background:var(--ledger-green-soft);
+  display:flex;align-items:center;justify-content:center;color:var(--ledger-green);
+  font-size:12px;font-weight:700;margin-bottom:14px;
 }
-.ih-flow-title{font-family:'Fraunces',serif;font-size:21px;margin:0 0 8px;font-weight:600;}
-.ih-flow-desc{font-size:13px;line-height:1.65;color:var(--slate);margin:0;}
+.ih-flow-title{font-size:17px;margin:0 0 8px;font-weight:700;letter-spacing:-0.01em;}
+.ih-flow-desc{font-size:14px;line-height:1.6;color:var(--slate);margin:0;}
 
-/* --- Split --- */
-.ih-split{display:grid;grid-template-columns:.9fr 1.1fr;gap:28px;align-items:stretch;}
-.ih-panel{background:#fff;border:1px solid var(--line);box-shadow:0 1px 2px rgba(20,33,61,.05), 0 8px 24px rgba(20,33,61,.05);padding:30px;}
-.ih-panel-dark{background:var(--ink);color:#fff;border:1px solid var(--line);box-shadow:0 1px 2px rgba(20,33,61,.05), 0 8px 24px rgba(20,33,61,.05);padding:30px;}
-.ih-panel h2,.ih-panel-dark h2{font-family:'Fraunces',serif;font-size:32px;line-height:1.15;font-weight:600;letter-spacing:-.02em;margin:0 0 16px;}
-.ih-panel p{color:var(--slate);line-height:1.65;margin:0 0 18px;font-size:14px;}
-.ih-panel-dark p{color:rgba(247,245,240,.72);line-height:1.65;margin:0 0 18px;font-size:14px;}
-.ih-checklist{display:grid;gap:12px;margin-top:18px;}
-.ih-check{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ink-soft);line-height:1.55;}
-.ih-check::before{content:"✓";font-weight:800;color:var(--ledger-green);flex-shrink:0;}
-.ih-doc-stack{display:grid;gap:9px;margin-top:20px;}
-.ih-doc-row{
-  display:flex;justify-content:space-between;gap:16px;align-items:center;
-  border:1px solid rgba(247,245,240,.16);padding:12px 14px;font-size:12.5px;color:rgba(247,245,240,.86);
+/* --- Documents --- */
+.ih-docs-panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:28px;}
+.ih-docs-panel h2{font-size:26px;line-height:1.2;font-weight:700;letter-spacing:-0.02em;margin:0 0 14px;}
+.ih-docs-panel p{color:var(--slate);line-height:1.65;margin:0 0 20px;font-size:14px;}
+.ih-doc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ih-doc-item{
+  border:1px solid var(--line);border-radius:8px;padding:14px 16px;
+  font-size:14px;color:var(--ink-soft);line-height:1.45;font-weight:500;
+  background:var(--paper-dim);
 }
-.ih-doc-status{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8FD9BD;flex-shrink:0;}
-.ih-doc-missing{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#E8A184;flex-shrink:0;}
+.ih-doc-note{
+  margin-top:18px;padding:14px 16px;background:var(--ledger-green-soft);
+  border-radius:8px;font-size:13px;line-height:1.55;color:var(--ink-soft);
+}
 
 /* --- CTA Band --- */
 .ih-cta-band{
-  background:var(--ink);color:var(--paper);padding:46px;
-  display:grid;grid-template-columns:1fr auto;gap:30px;align-items:center;
-  box-shadow:0 1px 2px rgba(20,33,61,.06), 0 12px 36px rgba(20,33,61,.08);
+  background:var(--ink);color:#f8fafc;padding:36px 32px;border-radius:12px;
+  display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;
 }
-.ih-cta-band h2{font-family:'Fraunces',serif;font-size:38px;line-height:1.1;margin:0 0 10px;font-weight:600;}
-.ih-cta-band p{margin:0;color:rgba(247,245,240,.72);line-height:1.6;font-size:14.5px;}
+.ih-cta-band h2{font-size:28px;line-height:1.15;margin:0 0 8px;font-weight:700;letter-spacing:-0.02em;}
+.ih-cta-band p{margin:0;color:#94a3b8;line-height:1.6;font-size:15px;max-width:52ch;}
 
 /* --- Footer --- */
-.ih-footer{border-top:1px solid var(--line);padding-top:24px;margin-top:64px;display:flex;justify-content:space-between;gap:20px;color:var(--slate);font-size:12px;}
-.ih-footer-mono{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;}
+.ih-footer{border-top:1px solid var(--line);padding-top:20px;margin-top:56px;display:flex;justify-content:space-between;gap:20px;color:var(--slate);font-size:13px;}
+.ih-footer-mono{font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;}
 
 /* --- Responsive --- */
 @media(max-width:1080px){
-  .ih-hero h1{font-size:54px;}
-  .ih-loan-grid{grid-template-columns:repeat(3,1fr);}
+  .ih-hero h1{font-size:42px;}
 }
 @media(max-width:900px){
   .ih-nav{display:none;}
   .ih-mobile-cta{display:inline-flex;}
-  .ih-hero{grid-template-columns:1fr;gap:34px;margin-bottom:54px;}
-  .ih-hero h1{font-size:46px;}
+  .ih-hero{grid-template-columns:1fr;gap:28px;margin-bottom:48px;}
+  .ih-hero h1{font-size:36px;}
   .ih-section-head{display:block;}
-  .ih-section-copy{margin-top:12px;}
-  .ih-loan-grid{grid-template-columns:1fr 1fr;}
+  .ih-section-copy{margin-top:10px;}
   .ih-flow{grid-template-columns:1fr;}
-  .ih-split{grid-template-columns:1fr;}
-  .ih-cta-band{grid-template-columns:1fr;padding:34px 26px;}
+  .ih-doc-grid{grid-template-columns:1fr 1fr;}
+  .ih-cta-band{grid-template-columns:1fr;padding:28px 22px;}
 }
 @media(max-width:560px){
-  .ih-app{padding:0 18px 60px;}
-  .ih-hero h1{font-size:38px;}
-  .ih-hero-copy{font-size:15.5px;}
-  .ih-loan-grid{grid-template-columns:1fr;}
-  .ih-section{margin:58px 0;}
-  .ih-section-title{font-size:31px;}
+  .ih-app{padding:0 18px 48px;}
+  .ih-hero h1{font-size:30px;}
+  .ih-hero-copy{font-size:15px;}
+  .ih-section{margin:48px 0;}
+  .ih-section-title{font-size:26px;}
+  .ih-doc-grid{grid-template-columns:1fr;}
   .ih-footer{display:block;line-height:1.8;}
 }
 `;
@@ -262,20 +237,20 @@ export default function InvestorHubPage() {
           {/* ── Hero ── */}
           <section className="ih-hero">
             <div>
-              <div className="ih-kicker">Private capital for investors</div>
+              <div className="ih-kicker">Investor financing</div>
               <h1>
-                Investor loan intake, built for <span>speed and clarity.</span>
+                Apply for your investor loan in <span>one guided flow.</span>
               </h1>
               <p className="ih-hero-copy">
-                Submit your scenario once. QuestRock's Investor Hub guides you through the right loan flow, builds a live Loan Ledger, collects documents, and routes the file to the right team for review.
+                Tell us about your deal, property, and loan goals. The intake walks you through the right questions for your program and shows estimated LTV, DSCR, and other key numbers as you go.
               </p>
               <div className="ih-btn-row">
-                <FlowButton
-                  text="Start Investor Intake"
-                  variant="dark"
-                  size="md"
-                  onClick={() => router.push('/investor-hub/apply')}
-                />
+              <FlowButton
+                text="Start Investor Intake"
+                variant="green"
+                size="md"
+                onClick={() => router.push('/investor-hub/apply')}
+              />
                 <a href="#programs" className="ih-btn ih-btn-secondary">
                   View Loan Programs
                 </a>
@@ -283,9 +258,9 @@ export default function InvestorHubPage() {
               <div className="ih-hero-points">
                 {[
                   'Step-by-step intake',
-                  'Live LTV / DSCR snapshot',
-                  'Upload docs as you go',
-                  'CRM + LendingPad ready',
+                  'Live LTV / DSCR estimates',
+                  'Upload documents as you go',
+                  'Save progress and return later',
                 ].map(t => (
                   <div key={t} className="ih-hero-point">
                     <span className="ih-dot" />
@@ -302,9 +277,9 @@ export default function InvestorHubPage() {
                 <div className="ih-ledger-head">
                   <div>
                     <div className="ih-lt">Loan Ledger</div>
-                    <div className="ih-ls">Live intake preview</div>
+                    <div className="ih-ls">Updates as you enter details</div>
                   </div>
-                  <div className="ih-seal">READY FOR<br />TERM SHEET</div>
+                  <div className="ih-seal">YOUR<br />ESTIMATE</div>
                 </div>
                 <div className="ih-ledger-body">
                   {[
@@ -324,7 +299,7 @@ export default function InvestorHubPage() {
                   ))}
                 </div>
                 <div className="ih-ledger-note">
-                  Key fields captured. Missing documents can be uploaded now or added after submission.
+                  Estimates update as you complete each section. Final terms depend on full review and documentation.
                 </div>
                 <div className="ih-ledger-tabs">
                   <span className="ih-ledger-tab-active">DSCR</span>
@@ -341,10 +316,10 @@ export default function InvestorHubPage() {
             <div className="ih-section-head">
               <div>
                 <div className="ih-kicker">Loan programs</div>
-                <h2 className="ih-section-title">Choose the intake path that fits the deal.</h2>
+                <h2 className="ih-section-title">Choose the program that fits your deal.</h2>
               </div>
               <p className="ih-section-copy">
-                Each program has its own guided flow, document checklist, and Loan Ledger calculations, so investors do not have to fight through irrelevant fields.
+                Each loan type has its own guided questions and calculations, so you only answer what applies to your scenario.
               </p>
             </div>
 
@@ -356,17 +331,17 @@ export default function InvestorHubPage() {
             <div className="ih-section-head">
               <div>
                 <div className="ih-kicker">How it works</div>
-                <h2 className="ih-section-title">From scenario to review-ready file.</h2>
+                <h2 className="ih-section-title">Three steps to submit your application.</h2>
               </div>
               <p className="ih-section-copy">
-                The hub is designed to reduce back-and-forth. Borrowers enter the scenario, the portal structures the numbers, and QuestRock receives a clean internal summary.
+                Most applicants finish in one sitting. You can also save your progress and come back when you have more details or documents ready.
               </p>
             </div>
             <div className="ih-flow">
               {[
-                { n: '01', title: 'Select the loan path',    body: 'Borrowers choose Portfolio, Bridge, Construction, DSCR, or Rehab, then only see the questions relevant to that program.' },
-                { n: '02', title: 'Build the Loan Ledger',   body: 'The portal calculates LTV, LTC, ARV percentage, cash-out, portfolio totals, or DSCR based on the selected loan type.' },
-                { n: '03', title: 'Submit to QuestRock',     body: 'The application, documents, missing items, and AI-generated summary route to the internal team for fast review.' },
+                { n: '01', title: 'Choose your loan program', body: 'Select Portfolio, Bridge, Construction, DSCR, or Rehab. You will only see questions relevant to that program.' },
+                { n: '02', title: 'Enter your deal details', body: 'Add property information, loan amount, entity details, and experience. See estimated LTV, DSCR, or other metrics update as you go.' },
+                { n: '03', title: 'Submit your application', body: 'Review your entries, upload any documents you have on hand, and submit. Our team will follow up with next steps.' },
               ].map(({ n, title, body }) => (
                 <div key={n} className="ih-flow-card">
                   <div className="ih-flow-icon">{n}</div>
@@ -377,45 +352,28 @@ export default function InvestorHubPage() {
             </div>
           </section>
 
-          {/* ── Split Feature ── */}
-          <section className="ih-section ih-split" id="documents">
-            <div className="ih-panel">
-              <div className="ih-kicker">Built for underwriting</div>
-              <h2>Collect the right data before the first call.</h2>
+          {/* ── Documents ── */}
+          <section className="ih-section" id="documents">
+            <div className="ih-docs-panel">
+              <div className="ih-kicker">Documents</div>
+              <h2>Upload what you have now — add the rest later.</h2>
               <p>
-                The Investor Hub turns loose borrower scenarios into structured loan files with property details, entity info, investor experience, liquidity, and document status.
+                Required documents depend on your loan program and transaction type. The intake will show a checklist for your scenario. You can submit without every file and send remaining items when your team requests them.
               </p>
-              <div className="ih-checklist">
+              <div className="ih-doc-grid">
                 {[
-                  'Property or portfolio builder with rent, taxes, insurance, HOA, mortgage balances, and occupancy.',
-                  'Program-specific branches for Bridge exit strategy, DSCR income, construction budgets, and rehab ARV.',
-                  'Live Loan Ledger with LTV, DSCR, and portfolio calculations as borrowers enter their scenario.',
-                  'AI summary prepared for QuestRock\'s internal review team.',
-                ].map((item, i) => (
-                  <div key={i} className="ih-check">{item}</div>
+                  'Purchase contract or PSA',
+                  'Mortgage statement',
+                  'Scope of work (rehab)',
+                  'Proof of liquidity',
+                  'Entity documents',
+                  'Rent roll (portfolio / DSCR)',
+                ].map(label => (
+                  <div key={label} className="ih-doc-item">{label}</div>
                 ))}
               </div>
-            </div>
-
-            <div className="ih-panel-dark">
-              <span className="ih-program-chip">Document checklist</span>
-              <h2 style={{ marginTop: 18 }}>Upload now, complete later.</h2>
-              <p>
-                Borrowers can submit with or without documents attached. QuestRock staff will follow up for anything needed.
-              </p>
-              <div className="ih-doc-stack">
-                {[
-                  { label: 'Purchase contract',   status: 'UPLOADED' },
-                  { label: 'Mortgage statement',  status: 'UPLOADED' },
-                  { label: 'Scope of work',       status: 'OPTIONAL' },
-                  { label: 'Proof of liquidity',  status: 'OPTIONAL' },
-                  { label: 'Entity documents',    status: 'UPLOADED' },
-                ].map(({ label, status }) => (
-                  <div key={label} className="ih-doc-row">
-                    <span>{label}</span>
-                    <span className={status === 'OPTIONAL' ? 'ih-doc-missing' : 'ih-doc-status'}>{status}</span>
-                  </div>
-                ))}
+              <div className="ih-doc-note">
+                Exact requirements vary by program. You will see which documents apply to your application inside the intake form.
               </div>
             </div>
           </section>
@@ -423,15 +381,15 @@ export default function InvestorHubPage() {
           {/* ── CTA Band ── */}
           <section className="ih-cta-band">
             <div>
-              <h2>Ready to structure your investor loan?</h2>
+              <h2>Ready to get started?</h2>
               <p>
-                Start the guided intake and QuestRock will receive a cleaner file with the numbers, documents, and next steps already organized.
+                Begin your application today. Our investor lending team will review your scenario and reach out with next steps.
               </p>
             </div>
             <div className="ih-btn-row">
               <FlowButton
                 text="Start Investor Intake"
-                variant="brass"
+                variant="green"
                 size="lg"
                 onClick={() => router.push('/investor-hub/apply')}
               />
@@ -442,7 +400,7 @@ export default function InvestorHubPage() {
 
         {/* ── Footer ── */}
         <footer className="ih-footer">
-          <div>© QuestRock Home Loans. Investor Hub intake experience.</div>
+          <div>© QuestRock Home Loans. All rights reserved.</div>
           <div className="ih-footer-mono">Business purpose loans only</div>
         </footer>
 
