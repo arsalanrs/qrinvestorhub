@@ -1,8 +1,18 @@
 import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/server';
 import { normalizePortalEmail, portalEmailHasApplications } from '@/lib/portal-auth';
-import { authCallbackUrl } from '@/lib/get-app-url';
+import {
+  generateLoginToken,
+  hashLoginToken,
+} from '@/lib/portal-session';
+import {
+  buildPortalLoginZapierPayload,
+  buildPortalVerifyUrl,
+  notifyZapierPortalLogin,
+} from '@/lib/zapier/notify-portal-login';
+
+const TOKEN_TTL_MINUTES = 30;
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,19 +32,32 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const supabase = await createSupabaseServerClient();
-    const emailRedirectTo = authCallbackUrl('/portal');
+    const token = generateLoginToken();
+    const tokenHash = hashLoginToken(token);
+    const expiresAt = new Date(Date.now() + TOKEN_TTL_MINUTES * 60 * 1000).toISOString();
 
-    const { error } = await supabase.auth.signInWithOtp({
+    const supabase = createSupabaseAdminClient();
+    const { error: insertError } = await supabase.from('portal_login_tokens').insert({
       email,
-      options: {
-        emailRedirectTo,
-      },
+      token_hash: tokenHash,
+      expires_at: expiresAt,
     });
 
-    if (error) {
-      console.error('[portal/magic-link]', error.message);
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    if (insertError) {
+      console.error('[portal/magic-link] token insert:', insertError.message);
+      return NextResponse.json({ error: 'Could not create sign-in link' }, { status: 500 });
+    }
+
+    const loginUrl = buildPortalVerifyUrl(token);
+    const zapPayload = buildPortalLoginZapierPayload(email, loginUrl);
+    const zapResult = await notifyZapierPortalLogin(zapPayload);
+
+    if (!zapResult.sent) {
+      console.error('[portal/magic-link] zapier:', 'error' in zapResult ? zapResult.error : zapResult.reason);
+      return NextResponse.json(
+        { error: 'Could not send sign-in email. Try again shortly.' },
+        { status: 503 },
+      );
     }
 
     return NextResponse.json({ ok: true, sent: true });

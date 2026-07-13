@@ -6,7 +6,6 @@ import { useSearchParams } from 'next/navigation';
 import { PROGRAM_CONFIGS } from '@/config/loan-programs';
 import type { ProgramKey } from '@/config/loan-programs';
 import { FlowButton } from '@/components/ui/flow-button';
-import { createClient } from '@/lib/supabase/client';
 
 type AppSummary = {
   id: string;
@@ -54,14 +53,7 @@ function PortalDashboardInner() {
     if (authError) setError(decodeURIComponent(authError));
     if (searchParams.get('checkEmail') === '1') setLinkSent(true);
 
-    void (async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email) {
-        setEmail(session.user.email);
-      }
-      await loadApps();
-    })();
+    void loadApps();
   }, [searchParams, loadApps]);
 
   async function handleMagicLink(e: React.FormEvent) {
@@ -98,8 +90,7 @@ function PortalDashboardInner() {
   }
 
   async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await fetch('/api/portal/sign-out', { method: 'POST', credentials: 'same-origin' });
     setEmail('');
     setApps([]);
     setInputEmail('');

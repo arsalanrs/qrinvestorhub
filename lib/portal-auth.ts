@@ -1,5 +1,6 @@
 import 'server-only';
-import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/server';
+import { getPortalSessionEmailFromCookie } from '@/lib/portal-session';
 
 export function normalizePortalEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -26,10 +27,7 @@ export function borrowerMatchesPortalEmail(borrower: unknown, portalEmail: strin
 }
 
 export async function getPortalSessionEmail(): Promise<string | null> {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.email) return null;
-  return normalizePortalEmail(user.email);
+  return getPortalSessionEmailFromCookie();
 }
 
 export async function portalEmailHasApplications(email: string): Promise<boolean> {
