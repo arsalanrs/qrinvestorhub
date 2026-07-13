@@ -5,6 +5,7 @@ import { fmt, pct, toNum } from '@/lib/loan-calculations';
 import { PROGRAM_CONFIGS } from '@/config/loan-programs';
 import type { ProgramKey } from '@/config/loan-programs';
 import type { SubmissionEmailContext } from '@/lib/submission-email-context';
+import { buildStaffSubmissionEmailHtml } from '@/lib/investor-email-templates';
 
 function maskSsn(ssn?: string): string {
   if (!ssn?.trim()) return '—';
@@ -155,58 +156,15 @@ export function buildSubmissionOnePager(
 
   const text = sections.filter(s => s !== undefined).join('\n').replace(/\n{3,}/g, '\n\n').trim();
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: Inter, -apple-system, sans-serif; color: #14213D; line-height: 1.5; max-width: 640px; margin: 0 auto; padding: 24px;">
-  <div style="background: #14213D; color: #fff; padding: 20px 24px; border-radius: 8px 8px 0 0;">
-    <p style="margin: 0 0 4px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7;">QuestRock Investor Hub</p>
-    <h1 style="margin: 0; font-size: 20px; font-weight: 600;">New Submission — ${borrowerName}</h1>
-    <p style="margin: 8px 0 0; font-size: 14px; opacity: 0.85;">${programLabel} · ${lr.transactionType?.replace(/_/g, ' ') || 'Transaction TBD'} · ${loanDisplay}</p>
-    ${routing ? `<p style="margin: 6px 0 0; font-size: 12px; opacity: 0.75;">Routed to <strong>${routing.toName}</strong> · CC: ${routing.cc.join(', ')}</p>` : ''}
-  </div>
-  <div style="border: 1px solid #e5e2db; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
-    <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-bottom: 20px;">
-      <tr><td style="padding: 4px 0; color: #6b7280; width: 140px;">Application ID</td><td style="font-family: monospace;">${applicationId}</td></tr>
-      <tr><td style="padding: 4px 0; color: #6b7280;">Email</td><td><a href="mailto:${b.email}">${b.email}</a></td></tr>
-      <tr><td style="padding: 4px 0; color: #6b7280;">Phone</td><td>${b.phone || '—'}</td></tr>
-      <tr><td style="padding: 4px 0; color: #6b7280;">Credit</td><td>${b.creditRange || '—'}</td></tr>
-      <tr><td style="padding: 4px 0; color: #6b7280;">Requested Loan</td><td><strong>${money(lr.requestedLoanAmount) || '—'}</strong></td></tr>
-      ${e.entityName ? `<tr><td style="padding: 4px 0; color: #6b7280;">Entity</td><td>${e.entityName} (${e.entityType || e.borrowingAs})</td></tr>` : ''}
-    </table>
-
-    <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin: 0 0 8px;">Key Metrics</h2>
-    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
-      ${metrics.marketLTV !== null ? `<span style="background: #f0faf5; padding: 8px 12px; border-radius: 6px; font-size: 13px;"><strong>LTV</strong> ${pct(metrics.marketLTV * 100)}</span>` : ''}
-      ${metrics.dscr !== null ? `<span style="background: #f0faf5; padding: 8px 12px; border-radius: 6px; font-size: 13px;"><strong>DSCR</strong> ${metrics.dscr.toFixed(2)}</span>` : ''}
-      ${liquidityTotal > 0 ? `<span style="background: #f0faf5; padding: 8px 12px; border-radius: 6px; font-size: 13px;"><strong>Liquidity</strong> ${fmt(liquidityTotal)}</span>` : ''}
-    </div>
-
-    ${warnings.length ? `
-    <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #b3492d; margin: 0 0 8px;">Guideline Flags</h2>
-    <ul style="margin: 0 0 20px; padding-left: 20px; font-size: 13px;">${warnings.map(w => `<li>${w}</li>`).join('')}</ul>
-    ` : ''}
-
-    <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin: 0 0 8px;">Summary</h2>
-    <p style="font-size: 14px; margin: 0 0 20px; background: #f7f5f0; padding: 14px; border-radius: 6px;">${aiSummary || '—'}</p>
-
-    ${context?.transcript?.found ? `
-    <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin: 0 0 8px;">Prior Call Transcript</h2>
-    <p style="font-size: 13px; margin: 0 0 20px; background: #eff6ff; padding: 14px; border-radius: 6px; white-space: pre-wrap;">${context.transcript.summary.replace(/</g, '&lt;')}</p>
-    ` : ''}
-
-    ${context?.shapeResult?.id ? `
-    <p style="font-size: 12px; color: #6b7280; margin: 0 0 12px;">Shape lead #${context.shapeResult.id} · ${context.shapeResult.action}${context.shapeResult.nameMismatch ? ` · ⚠ ${context.shapeResult.nameMismatch}` : ''}</p>
-    ` : ''}
-
-    ${portalLink || portfolioLink ? `<p style="margin: 0 0 8px;"><a href="${portalLink || portfolioLink}" style="color: #1f6f54; font-weight: 600;">Customer portal →</a>${portfolioLink ? ` · <a href="${portfolioLink}" style="color: #1f6f54;">Portfolio view</a>` : ''}${adminLink ? ` · <a href="${adminLink}" style="color: #2e5c8a;">Staff admin →</a>` : ''}</p>` : ''}
-
-    <hr style="border: none; border-top: 1px solid #e5e2db; margin: 24px 0;">
-    <pre style="font-size: 11px; white-space: pre-wrap; color: #6b7280; margin: 0; font-family: ui-monospace, monospace;">${text.replace(/</g, '&lt;')}</pre>
-  </div>
-</body>
-</html>`.trim();
+  const html = buildStaffSubmissionEmailHtml(
+    app,
+    metrics,
+    warnings,
+    aiSummary,
+    applicationId,
+    { admin: adminLink, portfolio: portfolioLink, portal: portalLink },
+    context,
+  );
 
   return { subject, text, html };
 }

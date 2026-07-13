@@ -97,14 +97,15 @@ INVESTOR_EMAIL_CC_JASON=jfriday@questrock.com
 
   <h3><span class="path">Path B</span> Staff alert email</h3>
   <p>Action: <strong>Gmail</strong> or <strong>Microsoft Outlook</strong> → Send Email</p>
+  <div class="note"><strong>Outlook not arriving?</strong> Map <code>To</code> to <code>emails staff to</code> — not a hardcoded address. Your test showed <code>arashid@quesrock.com</code> (typo: missing <strong>t</strong> in questrock). Use <code>nikksmith@questrock.com</code>, <code>rconway@questrock.com</code>, etc. from the payload. Turn on HTML body and map <code>emails staff html</code>.</div>
   <table>
     <tr><th>Email setting</th><th>Zapier value</th></tr>
     <tr><td>To</td><td><code>emails staff to</code></td></tr>
-    <tr><td>CC</td><td><code>emails staff ccCsv</code> (comma-separated: Nikk + Jason)</td></tr>
+    <tr><td>CC</td><td><code>emails staff ccCsv</code></td></tr>
     <tr><td>Subject</td><td><code>emails staff subject</code></td></tr>
-    <tr><td>Body (HTML)</td><td><code>emails staff html</code></td></tr>
-    <tr><td>Body (plain fallback)</td><td><code>emails staff text</code></td></tr>
-    <tr><td>Reply-To</td><td><code>borrower email</code></td></tr>
+    <tr><td>Body format</td><td><strong>HTML</strong></td></tr>
+    <tr><td>Body</td><td><code>emails staff html</code></td></tr>
+    <tr><td>Reply-To</td><td><code>emails staff replyTo</code> (borrower email)</td></tr>
   </table>
   <p><strong>Routing is pre-calculated</strong> in the payload — you don't need Zapier filters for loan amount:</p>
   <table>
@@ -121,8 +122,9 @@ INVESTOR_EMAIL_CC_JASON=jfriday@questrock.com
     <tr><th>Email setting</th><th>Zapier value</th></tr>
     <tr><td>To</td><td><code>emails customer to</code></td></tr>
     <tr><td>Subject</td><td><code>emails customer subject</code></td></tr>
-    <tr><td>Body (HTML)</td><td><code>emails customer html</code></td></tr>
-    <tr><td>Body (plain)</td><td><code>emails customer text</code></td></tr>
+    <tr><td>Body format</td><td><strong>HTML</strong></td></tr>
+    <tr><td>Body</td><td><code>emails customer html</code></td></tr>
+    <tr><td>Reply-To</td><td><code>emails customer replyTo</code></td></tr>
   </table>
   <p>Portal link is also at <code>links portal</code>. Magic-link sign-in uses <strong>Supabase Auth</strong> (not this email) — customer clicks portal, enters email, gets OTP from Supabase.</p>
 
