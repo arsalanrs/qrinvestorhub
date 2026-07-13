@@ -6,11 +6,11 @@ import { calcMetrics, getGuidelineWarnings } from '@/lib/loan-calculations';
 import { generateAISummary } from '@/lib/ai-summary';
 import { upsertShapeLead } from '@/integrations/shape/client';
 import { SHAPE_STATUS_MAP } from '@/integrations/shape/field-map';
-import { sendSubmissionEmail } from '@/lib/send-submission-email';
 import { getSubmissionEmailRouting } from '@/lib/investor-submission-routing';
 import { lookupCallTranscriptSummary } from '@/lib/call-transcript-lookup';
 import { buildShapeSubmissionNote } from '@/lib/shape-submission-note';
-import { sendCustomerPortalInvite } from '@/lib/send-portal-invite-email';
+import { buildZapierSubmissionPayload } from '@/lib/zapier/build-submission-payload';
+import { notifyZapierSubmission } from '@/lib/zapier/notify-submission';
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,28 +42,30 @@ export async function POST(req: NextRequest) {
       .filter(d => d.status === 'uploaded')
       .map(d => `${d.label}${d.fileName ? ` (${d.fileName})` : ''}`);
 
-    // Shape CRM — match existing (DSCR Hot) or create new lead
+    // Optional in-app Shape sync — leave ENABLE_SHAPE_SYNC=false when Zapier owns Shape
     let shapeLeadId: string | undefined;
     let shapeResult: Awaited<ReturnType<typeof upsertShapeLead>> | undefined;
     const shapeNote = buildShapeSubmissionNote(body, aiSummary, body.id || 'pending', {
       documentList: uploadedDocLabels,
     });
 
-    try {
-      shapeResult = await upsertShapeLead({
-        firstName: body.borrower.firstName,
-        lastName: body.borrower.lastName,
-        email: body.borrower.email,
-        phone: body.borrower.phone,
-        loanProgram: body.loanProgram || '',
-        loanAmount: body.loanRequest.requestedLoanAmount,
-        status: SHAPE_STATUS_MAP[body.loanProgram || ''] || 'Loan Submitted',
-        source: 'Investor Hub',
-        note: shapeNote,
-      });
-      shapeLeadId = shapeResult.id;
-    } catch (shapeErr) {
-      console.error('[submit] Shape sync error:', shapeErr);
+    if (process.env.ENABLE_SHAPE_SYNC === 'true') {
+      try {
+        shapeResult = await upsertShapeLead({
+          firstName: body.borrower.firstName,
+          lastName: body.borrower.lastName,
+          email: body.borrower.email,
+          phone: body.borrower.phone,
+          loanProgram: body.loanProgram || '',
+          loanAmount: body.loanRequest.requestedLoanAmount,
+          status: SHAPE_STATUS_MAP[body.loanProgram || ''] || 'Loan Submitted',
+          source: 'Investor Hub',
+          note: shapeNote,
+        });
+        shapeLeadId = shapeResult.id;
+      } catch (shapeErr) {
+        console.error('[submit] Shape sync error:', shapeErr);
+      }
     }
 
     const payload = {
@@ -142,42 +144,30 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    let emailStatus: string = 'skipped';
-    let emailTo: string | undefined;
+    let zapierStatus: string = 'skipped';
     if (applicationId) {
+      const zapierPayload = buildZapierSubmissionPayload(
+        body,
+        metrics,
+        warnings,
+        aiSummary,
+        applicationId,
+        { routing, transcript, shapeResult },
+      );
+
       try {
-        const emailResult = await sendSubmissionEmail(
-          body,
-          metrics,
-          warnings,
-          aiSummary,
-          applicationId,
-          { routing, transcript, shapeResult },
-        );
-        emailStatus = emailResult.sent
-          ? emailResult.channel
-          : ('skipped' in emailResult && emailResult.skipped)
+        const zapResult = await notifyZapierSubmission(zapierPayload);
+        zapierStatus = zapResult.sent
+          ? 'sent'
+          : ('skipped' in zapResult && zapResult.skipped)
             ? 'skipped'
             : 'failed';
-        if (emailResult.sent) emailTo = emailResult.to;
-        if ('error' in emailResult && emailResult.error) {
-          console.error('[submit] submission email error:', emailResult.error);
+        if ('error' in zapResult && zapResult.error) {
+          console.error('[submit] Zapier webhook error:', zapResult.error);
         }
-      } catch (emailErr) {
-        console.error('[submit] submission email error:', emailErr);
-        emailStatus = 'failed';
-      }
-
-      if (body.borrower.email?.trim()) {
-        try {
-          await sendCustomerPortalInvite(
-            body.borrower.email,
-            `${body.borrower.firstName} ${body.borrower.lastName}`.trim(),
-            applicationId,
-          );
-        } catch (portalEmailErr) {
-          console.error('[submit] portal invite email error:', portalEmailErr);
-        }
+      } catch (zapErr) {
+        console.error('[submit] Zapier webhook error:', zapErr);
+        zapierStatus = 'failed';
       }
     }
 
@@ -188,9 +178,8 @@ export async function POST(req: NextRequest) {
       shapeLeadId: shapeLeadId || null,
       shapeMatchedExisting: shapeResult?.matchedExisting ?? false,
       lendingpadStatus: 'pending',
-      emailStatus,
-      emailTo,
-      emailCc: routing.cc,
+      zapierStatus,
+      emailRouting: routing,
     });
   } catch (err) {
     console.error('[submit] error:', err);
