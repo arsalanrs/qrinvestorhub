@@ -56,9 +56,17 @@ export async function POST(req: NextRequest) {
     const zapResult = await notifyZapierPortalLogin(zapPayload);
 
     if (!zapResult.sent) {
-      console.error('[portal/magic-link] zapier:', 'error' in zapResult ? zapResult.error : zapResult.reason);
+      const detail = 'error' in zapResult ? zapResult.error : zapResult.reason;
+      console.error('[portal/magic-link] zapier failed:', detail);
+      const configMissing =
+        'skipped' in zapResult
+        && zapResult.reason?.includes('ZAPIER_PORTAL_LOGIN_WEBHOOK_URL');
       return NextResponse.json(
-        { error: 'Could not send sign-in email. Try again shortly.' },
+        {
+          error: configMissing
+            ? 'Sign-in email is not configured on the server. Contact QuestRock support.'
+            : 'Could not send sign-in email. Try again shortly.',
+        },
         { status: 503 },
       );
     }

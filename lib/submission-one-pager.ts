@@ -6,6 +6,7 @@ import { PROGRAM_CONFIGS } from '@/config/loan-programs';
 import type { ProgramKey } from '@/config/loan-programs';
 import type { SubmissionEmailContext } from '@/lib/submission-email-context';
 import { buildStaffSubmissionEmailHtml } from '@/lib/investor-email-templates';
+import { getAppOrigin } from '@/lib/get-app-url';
 
 function maskSsn(ssn?: string): string {
   if (!ssn?.trim()) return '—';
@@ -48,7 +49,7 @@ export function buildSubmissionOnePager(
     ? `Investor Hub — ${borrowerName} · ${programLabel} · ${loanDisplay} → ${routing.toName}`
     : `Investor Hub — ${borrowerName} · ${programLabel}`;
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || '';
+  const appUrl = getAppOrigin();
   const portfolioLink = appUrl ? `${appUrl}/portfolio/${applicationId}` : '';
   const portalLink = appUrl ? `${appUrl}/portal` : '';
   const adminLink = appUrl ? `${appUrl}/ops/investor-hub` : '';

@@ -12,6 +12,7 @@ import {
   buildCustomerWelcomeEmailHtml,
   buildCustomerWelcomeEmailText,
 } from '@/lib/investor-email-templates';
+import { getAppOrigin } from '@/lib/get-app-url';
 
 export type ZapierEmailBlock = {
   to: string;
@@ -82,7 +83,7 @@ export function buildZapierSubmissionPayload(
   context: SubmissionEmailContext,
 ): ZapierSubmissionPayload {
   const routing = context.routing ?? getSubmissionEmailRouting(app.loanRequest.requestedLoanAmount);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || '';
+  const appUrl = getAppOrigin();
   const portalUrl = appUrl ? `${appUrl}/portal` : '';
   const portfolioUrl = appUrl ? `${appUrl}/portfolio/${applicationId}` : '';
   const adminUrl = appUrl ? `${appUrl}/ops/investor-hub` : '';
