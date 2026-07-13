@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Investor Hub — Zapier Setup Guide</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --ink:#14213D; --green:#1f6f54; --paper:#f7f5f0; --line:#e5e2db; --slate:#64748b; }
+    * { box-sizing: border-box; }
+    body { font-family: Inter, sans-serif; color: var(--ink); background: var(--paper); margin: 0; line-height: 1.6; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 40px 24px 80px; }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    h2 { font-size: 18px; margin: 36px 0 12px; border-bottom: 2px solid var(--green); padding-bottom: 6px; }
+    h3 { font-size: 15px; margin: 24px 0 8px; color: var(--green); }
+    p, li { font-size: 14px; }
+    .meta { color: var(--slate); font-size: 13px; margin-bottom: 28px; }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin: 16px 0; }
+    code, pre { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    pre { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: var(--paper); font-weight: 600; }
+    .path { display: inline-block; background: rgba(31,111,84,.1); color: var(--green); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; margin: 16px 0; font-size: 13px; }
+    ol.steps { padding-left: 20px; }
+    ol.steps li { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <p style="font-family:IBM Plex Mono,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate)">QuestRock Investor Hub</p>
+  <h1>Zapier Setup — One Webhook, Three Automations</h1>
+  <p class="meta">When a borrower submits at <code>/investor-hub/apply</code>, the app saves to Supabase and POSTs a JSON payload to your Catch Hook. Zapier handles Shape CRM, staff alert email, and customer portal welcome email.</p>
+
+  <div class="note">
+    <strong>Formspree is NOT used here.</strong> IT Support Formspree stays on Intelligence Hub only. Investor Hub uses this webhook + Zapier for all post-submit email and Shape sync.
+  </div>
+
+  <h2>Step 0 — Vercel env vars</h2>
+  <div class="card">
+    <pre>ZAPIER_INVESTOR_SUBMISSION_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/XXXXX/YYYYY/
+ENABLE_SHAPE_SYNC=false
+NEXT_PUBLIC_APP_URL=https://your-investor-hub.vercel.app
+INVESTOR_EMAIL_RAY=rconway@questrock.com
+INVESTOR_EMAIL_NIKK=nikksmith@questrock.com
+INVESTOR_EMAIL_BASTIAN=bastianjohnston@questrock.com
+INVESTOR_EMAIL_CC_NIKK=nikksmith@questrock.com
+INVESTOR_EMAIL_CC_JASON=jfriday@questrock.com
+# Optional:
+# ZAPIER_WEBHOOK_SECRET=your-random-secret</pre>
+  </div>
+
+  <h2>Step 1 — Create the Catch Hook (Trigger)</h2>
+  <ol class="steps">
+    <li>Zapier → <strong>Create Zap</strong></li>
+    <li>Trigger: <strong>Webhooks by Zapier</strong> → <strong>Catch Hook</strong></li>
+    <li>Copy the webhook URL → paste into Vercel as <code>ZAPIER_INVESTOR_SUBMISSION_WEBHOOK_URL</code></li>
+    <li>Leave the test tab open — submit a test application from Investor Hub (or use Zapier's "Test trigger" after a real submit)</li>
+  </ol>
+
+  <h3>Optional security filter (recommended)</h3>
+  <ol class="steps">
+    <li>Add step: <strong>Filter by Zapier</strong></li>
+    <li>Condition: <code>X Questrock Webhook Secret</code> (from headers) <strong>Exactly matches</strong> your <code>ZAPIER_WEBHOOK_SECRET</code></li>
+    <li>Skip this if you don't set the secret env var</li>
+  </ol>
+
+  <h2>Step 2 — Add Paths (3 branches)</h2>
+  <p>After the trigger (and optional filter), add <strong>Paths by Zapier</strong>. Create three paths — all can run on every submission (no conditions needed), or use <code>zapierPaths</code> if you want to toggle later.</p>
+
+  <h3><span class="path">Path A</span> Shape CRM — create or update lead</h3>
+  <p>Use your Shape integration (SetShape / custom webhook / whatever QuestRock already uses in other Zaps). Map these fields from the webhook payload:</p>
+  <table>
+    <tr><th>Shape field</th><th>Zapier field (from Catch Hook)</th></tr>
+    <tr><td>First name</td><td><code>shape firstName</code></td></tr>
+    <tr><td>Last name</td><td><code>shape lastName</code></td></tr>
+    <tr><td>Email</td><td><code>shape email</code></td></tr>
+    <tr><td>Phone</td><td><code>shape phone</code></td></tr>
+    <tr><td>Loan type / program</td><td><code>shape loanProgram</code> or <code>loanProgramLabel</code></td></tr>
+    <tr><td>Loan amount</td><td><code>shape loanAmount</code> or <code>loanRequest requestedLoanAmount</code></td></tr>
+    <tr><td>Lead status</td><td><code>shape status</code> (e.g. "DSCR Loan Submitted")</td></tr>
+    <tr><td>Lead source</td><td><code>shape source</code> → always "Investor Hub"</td></tr>
+    <tr><td>Notes / activity</td><td><code>shape note</code> (HTML with AI summary + docs)</td></tr>
+  </table>
+  <p><strong>Search-before-create:</strong> If your Shape Zap supports it, search by <code>shape email</code> or <code>shape phone</code> first; update if found, create if not (matches in-app logic when <code>ENABLE_SHAPE_SYNC=true</code>).</p>
+  <p><strong>Extra fields</strong> you may want from the raw payload:</p>
+  <table>
+    <tr><th>Use case</th><th>Zapier field</th></tr>
+    <tr><td>Application ID in Shape custom field</td><td><code>applicationId</code></td></tr>
+    <tr><td>Deal stage</td><td><code>dealStage</code></td></tr>
+    <tr><td>Entity name</td><td><code>entity entityName</code></td></tr>
+    <tr><td>Property address (main)</td><td><code>properties 1 address</code> + city/state/zip</td></tr>
+    <tr><td>DSCR / LTV</td><td><code>calculations dscr</code>, <code>calculations marketLTV</code></td></tr>
+    <tr><td>Prior call transcript</td><td><code>transcript summary</code> (if found)</td></tr>
+  </table>
+
+  <h3><span class="path">Path B</span> Staff alert email</h3>
+  <p>Action: <strong>Gmail</strong> or <strong>Microsoft Outlook</strong> → Send Email</p>
+  <table>
+    <tr><th>Email setting</th><th>Zapier value</th></tr>
+    <tr><td>To</td><td><code>emails staff to</code></td></tr>
+    <tr><td>CC</td><td><code>emails staff ccCsv</code> (comma-separated: Nikk + Jason)</td></tr>
+    <tr><td>Subject</td><td><code>emails staff subject</code></td></tr>
+    <tr><td>Body (HTML)</td><td><code>emails staff html</code></td></tr>
+    <tr><td>Body (plain fallback)</td><td><code>emails staff text</code></td></tr>
+    <tr><td>Reply-To</td><td><code>borrower email</code></td></tr>
+  </table>
+  <p><strong>Routing is pre-calculated</strong> in the payload — you don't need Zapier filters for loan amount:</p>
+  <table>
+    <tr><th>Loan amount</th><th><code>emailRouting toName</code></th><th><code>emailRouting to</code></th></tr>
+    <tr><td>&gt; $1,000,000</td><td>Ray Conway</td><td>INVESTOR_EMAIL_RAY</td></tr>
+    <tr><td>$600,000 – $1,000,000</td><td>Nikk Smith</td><td>INVESTOR_EMAIL_NIKK</td></tr>
+    <tr><td>&lt; $600,000</td><td>Bastian Johnston</td><td>INVESTOR_EMAIL_BASTIAN</td></tr>
+  </table>
+  <p>CC is always Nikk + Jason (<code>emailRouting cc</code>).</p>
+
+  <h3><span class="path">Path C</span> Customer portal welcome email</h3>
+  <p>Action: <strong>Gmail</strong> or <strong>Outlook</strong> → Send Email</p>
+  <table>
+    <tr><th>Email setting</th><th>Zapier value</th></tr>
+    <tr><td>To</td><td><code>emails customer to</code></td></tr>
+    <tr><td>Subject</td><td><code>emails customer subject</code></td></tr>
+    <tr><td>Body (HTML)</td><td><code>emails customer html</code></td></tr>
+    <tr><td>Body (plain)</td><td><code>emails customer text</code></td></tr>
+  </table>
+  <p>Portal link is also at <code>links portal</code>. Magic-link sign-in uses <strong>Supabase Auth</strong> (not this email) — customer clicks portal, enters email, gets OTP from Supabase.</p>
+
+  <h2>Step 3 — Test end-to-end</h2>
+  <ol class="steps">
+    <li>Deploy Investor Hub with webhook URL set</li>
+    <li>Submit a test application at <code>/investor-hub/apply</code></li>
+    <li>In Zapier, confirm Catch Hook received payload (<code>event</code> = <code>investor_application.submitted</code>)</li>
+    <li>Verify Shape lead created/updated</li>
+    <li>Verify staff email landed in correct inbox (check CC)</li>
+    <li>Verify customer welcome email to borrower</li>
+    <li>Customer signs in at <code>/portal</code> with magic link</li>
+  </ol>
+
+  <h2>Payload reference (top-level keys)</h2>
+  <pre>{
+  "event": "investor_application.submitted",
+  "applicationId": "uuid",
+  "submittedAt": "ISO timestamp",
+  "loanProgram": "dscr | bridge | ...",
+  "loanProgramLabel": "Human-readable program name",
+  "dealStage": "under_contract | ...",
+  "borrower": { "firstName", "lastName", "email", "phone", ... },
+  "entity": { "entityName", "entityType", "ownershipPercentage", ... },
+  "experience": { "flipsLast3Years", "rentalsOwned", ... },
+  "liquidity": [ { "type", "label", "estimatedBalance" } ],
+  "loanRequest": { "requestedLoanAmount", "transactionType", ... },
+  "properties": [ { "address", "city", "state", "currentAsIsValue", ... } ],
+  "documents": [ { "label", "status", "fileName", ... } ],
+  "calculations": { "dscr", "marketLTV", "totalPortfolioValue", ... },
+  "guidelineWarnings": [ "string" ],
+  "aiSummary": "string",
+  "emailRouting": { "to", "toName", "cc", "loanAmount", "tier" },
+  "links": { "portal", "portfolio", "admin" },
+  "emails": { "staff": {...}, "customer": {...} },
+  "shape": { "firstName", "lastName", "email", "phone", "loanProgram",
+             "loanAmount", "status", "source", "note" },
+  "transcript": { "found", "summary", "callDate", "statusLabel" },
+  "zapierPaths": ["shape_sync", "staff_email", "customer_email"]
+}</pre>
+
+  <h2>Troubleshooting</h2>
+  <div class="card">
+    <p><strong>Webhook not firing:</strong> Check Vercel logs for <code>[submit] Zapier webhook</code>. Confirm <code>ZAPIER_INVESTOR_SUBMISSION_WEBHOOK_URL</code> is set on Production.</p>
+    <p><strong>Empty HTML in email:</strong> In Gmail/Outlook step, choose "HTML" body type and map <code>emails staff html</code> — not the plain text field.</p>
+    <p><strong>Shape duplicate leads:</strong> Add a Shape search step on email/phone before create.</p>
+    <p><strong>Customer can't log in:</strong> Supabase Auth → URL Configuration → add <code>{NEXT_PUBLIC_APP_URL}/auth/callback</code>.</p>
+    <p><strong>Double Shape sync:</strong> Keep <code>ENABLE_SHAPE_SYNC=false</code> when Zapier owns Shape.</p>
+  </div>
+
+  <h2>How many Zaps total?</h2>
+  <table>
+    <tr><th>Option</th><th>Count</th><th>When to use</th></tr>
+    <tr><td><strong>Recommended</strong> — 1 Zap, Paths A+B+C</td><td>1</td><td>Simplest; one webhook URL; all actions stay in sync</td></tr>
+    <tr><td>3 separate Zaps, same Catch Hook URL</td><td>3</td><td>Only if different teams own Shape vs email; Zapier allows multiple Zaps on one hook</td></tr>
+    <tr><td>Supabase trigger instead of webhook</td><td>1+</td><td>Backup if webhook fails — trigger on <code>investor_applications</code> insert where status=submitted</td></tr>
+  </table>
+
+  <p class="meta" style="margin-top:40px">Source: <code>lib/zapier/build-submission-payload.ts</code> · Repo: qrinvestorhub</p>
+</div>
+</body>
+</html>
