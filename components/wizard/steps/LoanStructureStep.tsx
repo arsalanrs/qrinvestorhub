@@ -4,6 +4,7 @@ import { useFormContext, Controller } from 'react-hook-form';
 import type { InvestorApplication } from '@/types/investor-application';
 import { WizardCard } from '@/components/ui/WizardCard';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
+import { RhfDictationInput } from '@/components/ui/RhfDictationInput';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -101,8 +102,9 @@ export function LoanStructureStep() {
                 Property Address{' '}
                 <span style={{ fontSize: '11px', color: 'var(--slate-light)', fontWeight: 400 }}>(if you have one)</span>
               </label>
-              <input
-                {...register('loanRequest.purchaseSubjectAddress')}
+              <RhfDictationInput
+                control={control}
+                name="loanRequest.purchaseSubjectAddress"
                 placeholder="123 Main St, City, ST 12345"
                 style={inputStyle}
               />
@@ -277,16 +279,18 @@ export function LoanStructureStep() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={labelStyle}>Exit Strategy</label>
-              <input
-                {...register('loanRequest.exitStrategy')}
+              <RhfDictationInput
+                control={control}
+                name="loanRequest.exitStrategy"
                 placeholder="e.g. sell after renovation, refi into DSCR loan"
                 style={inputStyle}
               />
             </div>
             <div>
               <label style={labelStyle}>Backup Exit Strategy <span style={{ fontSize: '11px', color: 'var(--slate-light)', fontWeight: 400 }}>(optional)</span></label>
-              <input
-                {...register('loanRequest.backupExitStrategy')}
+              <RhfDictationInput
+                control={control}
+                name="loanRequest.backupExitStrategy"
                 placeholder="e.g. hold as rental if market softens"
                 style={inputStyle}
               />

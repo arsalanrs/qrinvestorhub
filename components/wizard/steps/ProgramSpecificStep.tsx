@@ -3,6 +3,7 @@
 import { useFormContext, Controller, useWatch } from 'react-hook-form';
 import type { InvestorApplication } from '@/types/investor-application';
 import { WizardCard } from '@/components/ui/WizardCard';
+import { RhfDictationInput } from '@/components/ui/RhfDictationInput';
 import { YesNoToggle } from '@/components/ui/YesNoToggle';
 import { fmt, toNum } from '@/lib/loan-calculations';
 
@@ -199,7 +200,7 @@ function ConstructionStep() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div>
             <label style={labelStyle}>Builder / GC Name</label>
-            <input {...register('constructionGoal.builderName')} placeholder="ABC Construction LLC" style={inputStyle} />
+            <RhfDictationInput control={control} name="constructionGoal.builderName" placeholder="ABC Construction LLC" style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Builder Phone</label>
@@ -207,7 +208,7 @@ function ConstructionStep() {
           </div>
           <div>
             <label style={labelStyle}>Builder License #</label>
-            <input {...register('constructionGoal.builderLicense')} placeholder="License number" style={inputStyle} />
+            <RhfDictationInput control={control} name="constructionGoal.builderLicense" placeholder="License number" style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Construction Timeline</label>
@@ -276,7 +277,7 @@ function ConstructionStep() {
 }
 
 function BridgeStep() {
-  const { register } = useFormContext<InvestorApplication>();
+  const { register, control } = useFormContext<InvestorApplication>();
   return (
     <WizardCard title="Bridge Loan — Exit Strategy" subtitle="Bridge loans are short-term. Lenders want to understand your exit plan.">
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -293,7 +294,7 @@ function BridgeStep() {
         </div>
         <div style={{ gridColumn: '1 / -1' }}>
           <label style={labelStyle}>Backup Exit Strategy</label>
-          <input {...register('loanRequest.backupExitStrategy')} placeholder="e.g. hold as rental if sale market softens" style={inputStyle} />
+          <RhfDictationInput control={control} name="loanRequest.backupExitStrategy" placeholder="e.g. hold as rental if sale market softens" style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>Funding Timeline Needed</label>

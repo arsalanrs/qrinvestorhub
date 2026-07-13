@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import type { InvestorApplication } from '@/types/investor-application';
 import { CurrencyInput } from './CurrencyInput';
+import { RhfDictationInput } from './RhfDictationInput';
 
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
@@ -97,18 +98,18 @@ export function PropertyCard({ index, onRemove, showRemove }: PropertyCardProps)
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', marginBottom: '16px' }}>
             <div>
               <label style={labelStyle}>Street Address *</label>
-              <input {...register(`${prefix}.address`)} placeholder="123 Main St" style={inputStyle} />
+              <RhfDictationInput control={control} name={`${prefix}.address`} placeholder="123 Main St" style={inputStyle} />
             </div>
             <div style={{ width: '100px' }}>
               <label style={labelStyle}>Unit</label>
-              <input {...register(`${prefix}.unit`)} placeholder="Apt 2" style={inputStyle} />
+              <RhfDictationInput control={control} name={`${prefix}.unit`} placeholder="Apt 2" style={inputStyle} />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 100px', gap: '12px', marginBottom: '16px' }}>
             <div>
               <label style={labelStyle}>City *</label>
-              <input {...register(`${prefix}.city`)} placeholder="City" style={inputStyle} />
+              <RhfDictationInput control={control} name={`${prefix}.city`} placeholder="City" style={inputStyle} />
             </div>
             <div>
               <label style={labelStyle}>State</label>
@@ -188,7 +189,7 @@ export function PropertyCard({ index, onRemove, showRemove }: PropertyCardProps)
               />
               <div>
                 <label style={labelStyle}>Current Lender</label>
-                <input {...register(`${prefix}.currentLender`)} placeholder="Lender name" style={inputStyle} />
+                <RhfDictationInput control={control} name={`${prefix}.currentLender`} placeholder="Lender name" style={inputStyle} />
               </div>
             </div>
           </div>

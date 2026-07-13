@@ -3,6 +3,7 @@
 import { useFormContext, Controller, useFieldArray } from 'react-hook-form';
 import type { InvestorApplication } from '@/types/investor-application';
 import { WizardCard } from '@/components/ui/WizardCard';
+import { RhfDictationInput } from '@/components/ui/RhfDictationInput';
 
 const CREDIT_RANGES = [
   { value: '620-659', label: '620–659' },
@@ -153,7 +154,7 @@ export function BorrowerProfileStep() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelStyle}>Entity Name <span style={{ color: 'var(--clay)' }}>*</span></label>
-                <input {...register('entity.entityName', { required: borrowingAs === 'entity' })} placeholder="ABC Investments LLC" style={inputStyle} />
+                <RhfDictationInput control={control} name="entity.entityName" placeholder="ABC Investments LLC" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>State of Formation</label>
@@ -164,7 +165,7 @@ export function BorrowerProfileStep() {
               </div>
               <div>
                 <label style={labelStyle}>Authorized Signer</label>
-                <input {...register('entity.authorizedSigner')} placeholder="Member / Manager name" style={inputStyle} />
+                <RhfDictationInput control={control} name="entity.authorizedSigner" placeholder="Member / Manager name" style={inputStyle} />
               </div>
               <div>
                 <label style={labelStyle}>Ownership % <span style={{ fontSize: '11px', color: 'var(--slate-light)', fontWeight: 400 }}>(your share)</span></label>
@@ -206,7 +207,7 @@ export function BorrowerProfileStep() {
                 <div key={field.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '12px', marginBottom: '12px', alignItems: 'end' }}>
                   <div>
                     <label style={labelStyle}>Full Name</label>
-                    <input {...register(`entity.additionalGuarantors.${i}.name`)} placeholder="Name" style={inputStyle} />
+                    <RhfDictationInput control={control} name={`entity.additionalGuarantors.${i}.name`} placeholder="Name" style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Email</label>
@@ -240,11 +241,11 @@ export function BorrowerProfileStep() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
           <div>
             <label style={labelStyle}>First Name <span style={{ color: 'var(--clay)' }}>*</span></label>
-            <input {...register('borrower.firstName', { required: true })} placeholder="Jane" style={inputStyle} />
+            <RhfDictationInput control={control} name="borrower.firstName" placeholder="Jane" style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Last Name <span style={{ color: 'var(--clay)' }}>*</span></label>
-            <input {...register('borrower.lastName', { required: true })} placeholder="Smith" style={inputStyle} />
+            <RhfDictationInput control={control} name="borrower.lastName" placeholder="Smith" style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Email Address <span style={{ color: 'var(--clay)' }}>*</span></label>
@@ -315,7 +316,7 @@ export function BorrowerProfileStep() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
                   <label style={labelStyle}>Co-Borrower Full Name</label>
-                  <input {...register('borrower.coBorrowerName')} placeholder="Full name" style={inputStyle} />
+                  <RhfDictationInput control={control} name="borrower.coBorrowerName" placeholder="Full name" style={inputStyle} />
                 </div>
                 <div>
                   <label style={labelStyle}>Co-Borrower Email</label>
