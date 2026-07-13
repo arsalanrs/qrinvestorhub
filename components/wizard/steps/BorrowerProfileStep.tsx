@@ -273,6 +273,9 @@ export function BorrowerProfileStep() {
         <div style={{ marginBottom: '24px' }}>
           <label style={{ ...labelStyle, marginBottom: '10px' }}>Estimated Credit Score Range</label>
           <CreditRangePicker name="borrower.creditRange" />
+          <p style={{ fontSize: '12px', color: 'var(--slate)', margin: '10px 0 0', lineHeight: 1.5 }}>
+            By providing your date of birth and Social Security number above, you consent to QuestRock pulling your credit as part of this application.
+          </p>
         </div>
 
         {/* Co-Borrower */}

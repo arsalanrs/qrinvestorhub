@@ -75,6 +75,10 @@ export function SuccessScreen({ applicationId, borrowerName }: SuccessScreenProp
           <p style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: '14px', color: 'var(--ink)', margin: 0, wordBreak: 'break-all', fontWeight: 500 }}>{applicationId}</p>
         </div>
 
+        <p style={{ fontSize: '14px', color: 'var(--slate)', margin: '0 0 28px', lineHeight: 1.6 }}>
+          Check your email for a portal invite, or sign in anytime with a secure magic link sent to the email on your application.
+        </p>
+
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -82,20 +86,14 @@ export function SuccessScreen({ applicationId, borrowerName }: SuccessScreenProp
           alignItems: 'center',
         }}>
           <FlowButton
-            text="Back to Investor Hub"
-            variant="green"
-            size="md"
-            onClick={() => { window.location.href = '/investor-hub'; }}
-          />
-          <FlowButton
-            text="Visit QuestRock Home Loans"
-            variant="dark"
-            size="md"
-            onClick={() => { window.open('https://questrockhomeloans.com', '_blank'); }}
-          />
-          <FlowButton
-            text="View Portfolio"
+            text="Open Investor Portal"
             variant="brass"
+            size="md"
+            onClick={() => { window.location.href = '/portal'; }}
+          />
+          <FlowButton
+            text="View This Application"
+            variant="green"
             size="md"
             onClick={() => { window.location.href = `/portfolio/${applicationId}`; }}
           />

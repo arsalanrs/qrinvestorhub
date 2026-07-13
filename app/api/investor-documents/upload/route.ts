@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseApiClient } from '@/lib/supabase/server';
 
 const BUCKET = 'investor-documents';
 
@@ -14,15 +14,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseApiClient();
 
-    // Ensure bucket exists (graceful fallback)
     const { data: buckets } = await supabase.storage.listBuckets();
     const bucketExists = buckets?.some(b => b.name === BUCKET);
     if (!bucketExists) {
       const { error: bucketError } = await supabase.storage.createBucket(BUCKET, {
         public: false,
-        fileSizeLimit: 10 * 1024 * 1024, // 10MB
+        fileSizeLimit: 10 * 1024 * 1024,
       });
       if (bucketError) {
         console.error('[upload] bucket creation error:', bucketError);
@@ -30,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ext = file.name.split('.').pop() || 'pdf';
-    const path = `${applicationId || 'anonymous'}/${documentId}-${Date.now()}.${ext}`;
+    const path = `${applicationId || 'draft'}/${documentId}-${Date.now()}.${ext}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
@@ -47,12 +46,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(data.path);
+    // Private bucket — store storage path; staff retrieve via Supabase signed URLs / ops portal
+    const storageRef = `supabase://${BUCKET}/${data.path}`;
 
     return NextResponse.json({
-      fileUrl: urlData.publicUrl,
+      fileUrl: storageRef,
       fileName: file.name,
       path: data.path,
+      bucket: BUCKET,
     });
   } catch (err) {
     console.error('[upload] error:', err);

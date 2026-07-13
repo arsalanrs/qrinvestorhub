@@ -195,6 +195,7 @@ export interface Consents {
   noOwnerOccupancy: boolean;
   contactConsent: boolean;
   electronicComms: boolean;
+  creditPullConsent: boolean;
 }
 
 export interface InvestorApplication {

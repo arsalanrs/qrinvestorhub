@@ -7,13 +7,16 @@ import { generateAISummary } from '@/lib/ai-summary';
 import { upsertShapeLead } from '@/integrations/shape/client';
 import { SHAPE_STATUS_MAP } from '@/integrations/shape/field-map';
 import { sendSubmissionEmail } from '@/lib/send-submission-email';
+import { getSubmissionEmailRouting } from '@/lib/investor-submission-routing';
+import { lookupCallTranscriptSummary } from '@/lib/call-transcript-lookup';
+import { buildShapeSubmissionNote } from '@/lib/shape-submission-note';
+import { sendCustomerPortalInvite } from '@/lib/send-portal-invite-email';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as InvestorApplication;
     const supabase = createSupabaseApiClient();
 
-    // Compute metrics
     const metrics = calcMetrics({
       liquidAssets: body.liquidity,
       properties: body.properties,
@@ -31,13 +34,23 @@ export async function POST(req: NextRequest) {
       body.properties.map(p => p.occupancyStatus)
     );
 
-    // Generate AI summary
     const aiSummary = await generateAISummary(body, metrics, warnings);
+    const routing = getSubmissionEmailRouting(body.loanRequest.requestedLoanAmount);
+    const transcript = await lookupCallTranscriptSummary(body.borrower.phone);
 
-    // Shape CRM sync
+    const uploadedDocLabels = (body.documents || [])
+      .filter(d => d.status === 'uploaded')
+      .map(d => `${d.label}${d.fileName ? ` (${d.fileName})` : ''}`);
+
+    // Shape CRM — match existing (DSCR Hot) or create new lead
     let shapeLeadId: string | undefined;
+    let shapeResult: Awaited<ReturnType<typeof upsertShapeLead>> | undefined;
+    const shapeNote = buildShapeSubmissionNote(body, aiSummary, body.id || 'pending', {
+      documentList: uploadedDocLabels,
+    });
+
     try {
-      const shapeResult = await upsertShapeLead({
+      shapeResult = await upsertShapeLead({
         firstName: body.borrower.firstName,
         lastName: body.borrower.lastName,
         email: body.borrower.email,
@@ -45,15 +58,14 @@ export async function POST(req: NextRequest) {
         loanProgram: body.loanProgram || '',
         loanAmount: body.loanRequest.requestedLoanAmount,
         status: SHAPE_STATUS_MAP[body.loanProgram || ''] || 'Loan Submitted',
-        source: 'investor_hub',
-        note: aiSummary,
+        source: 'Investor Hub',
+        note: shapeNote,
       });
       shapeLeadId = shapeResult.id;
     } catch (shapeErr) {
       console.error('[submit] Shape sync error:', shapeErr);
     }
 
-    // Upsert application
     const payload = {
       status: 'submitted',
       source: 'investor_hub',
@@ -92,7 +104,6 @@ export async function POST(req: NextRequest) {
       applicationId = data?.id;
     }
 
-    // Save properties
     if (body.properties && body.properties.length > 0 && applicationId) {
       for (const prop of body.properties) {
         await supabase.from('investor_properties').upsert({
@@ -103,25 +114,52 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Log event
+    if (applicationId && body.documents?.length) {
+      for (const doc of body.documents) {
+        if (doc.status !== 'uploaded') continue;
+        await supabase.from('investor_documents').upsert({
+          application_id: applicationId,
+          document_type: doc.type,
+          file_name: doc.fileName || doc.label,
+          file_url: doc.fileUrl || null,
+          status: 'uploaded',
+          required: doc.required,
+        });
+      }
+    }
+
     if (applicationId) {
       await supabase.from('investor_application_events').insert({
         application_id: applicationId,
         event_type: 'submitted',
-        payload: { warnings, metrics: { dscr: metrics.dscr, marketLTV: metrics.marketLTV } },
+        payload: {
+          warnings,
+          metrics: { dscr: metrics.dscr, marketLTV: metrics.marketLTV },
+          emailRouting: routing,
+          shape: shapeResult,
+          transcriptFound: transcript.found,
+        },
       });
     }
 
-    // Email one-pager to Nikk / staff (Formspree or Resend — non-blocking)
     let emailStatus: string = 'skipped';
+    let emailTo: string | undefined;
     if (applicationId) {
       try {
-        const emailResult = await sendSubmissionEmail(body, metrics, warnings, aiSummary, applicationId);
+        const emailResult = await sendSubmissionEmail(
+          body,
+          metrics,
+          warnings,
+          aiSummary,
+          applicationId,
+          { routing, transcript, shapeResult },
+        );
         emailStatus = emailResult.sent
           ? emailResult.channel
           : ('skipped' in emailResult && emailResult.skipped)
             ? 'skipped'
             : 'failed';
+        if (emailResult.sent) emailTo = emailResult.to;
         if ('error' in emailResult && emailResult.error) {
           console.error('[submit] submission email error:', emailResult.error);
         }
@@ -129,14 +167,30 @@ export async function POST(req: NextRequest) {
         console.error('[submit] submission email error:', emailErr);
         emailStatus = 'failed';
       }
+
+      if (body.borrower.email?.trim()) {
+        try {
+          await sendCustomerPortalInvite(
+            body.borrower.email,
+            `${body.borrower.firstName} ${body.borrower.lastName}`.trim(),
+            applicationId,
+          );
+        } catch (portalEmailErr) {
+          console.error('[submit] portal invite email error:', portalEmailErr);
+        }
+      }
     }
 
     return NextResponse.json({
       applicationId,
       aiSummary,
-      shapeStatus: shapeLeadId ? 'synced' : 'skipped',
+      shapeStatus: shapeLeadId ? (shapeResult?.action || 'synced') : 'skipped',
+      shapeLeadId: shapeLeadId || null,
+      shapeMatchedExisting: shapeResult?.matchedExisting ?? false,
       lendingpadStatus: 'pending',
       emailStatus,
+      emailTo,
+      emailCc: routing.cc,
     });
   } catch (err) {
     console.error('[submit] error:', err);

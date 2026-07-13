@@ -226,6 +226,7 @@ export default function InvestorHubPage() {
             <a href="#programs">Loan Programs</a>
             <a href="#process">How It Works</a>
             <a href="#documents">Documents</a>
+            <Link href="/portal">My Portal</Link>
             <Link href="/investor-hub/apply" className="ih-header-cta">Start Intake</Link>
           </nav>
 

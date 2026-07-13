@@ -85,7 +85,7 @@ function getDefaultValues(initialProgram?: string): InvestorApplication {
     additionalNotes: '',
     consents: {
       accuracyConfirmed: false, investmentPurpose: false, noOwnerOccupancy: false,
-      contactConsent: false, electronicComms: false,
+      contactConsent: false, electronicComms: false, creditPullConsent: false,
     },
   };
 }

@@ -3,6 +3,7 @@
 import { useFormContext, Controller, useWatch } from 'react-hook-form';
 import type { InvestorApplication } from '@/types/investor-application';
 import { WizardCard } from '@/components/ui/WizardCard';
+import { DictationTextarea } from '@/components/ui/DictationTextarea';
 import { YesNoToggle } from '@/components/ui/YesNoToggle';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { toNum, fmt } from '@/lib/loan-calculations';
@@ -113,11 +114,19 @@ export function ExperienceLiquidityStep() {
             {experience?.adverseHistory && (
               <div style={{ marginTop: '12px' }}>
                 <label style={labelStyle}>Please briefly explain:</label>
-                <textarea
-                  {...register('experience.adverseHistoryDetails')}
-                  rows={3}
-                  placeholder="Provide details about the adverse history..."
-                  style={{ ...inputStyle, resize: 'vertical' }}
+                <Controller
+                  control={control}
+                  name="experience.adverseHistoryDetails"
+                  render={({ field }) => (
+                    <DictationTextarea
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      rows={3}
+                      placeholder="Provide details about the adverse history..."
+                      style={{ ...inputStyle, resize: 'vertical' }}
+                    />
+                  )}
                 />
               </div>
             )}

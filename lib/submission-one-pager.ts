@@ -4,6 +4,7 @@ import type { LoanMetrics } from '@/lib/loan-calculations';
 import { fmt, pct, toNum } from '@/lib/loan-calculations';
 import { PROGRAM_CONFIGS } from '@/config/loan-programs';
 import type { ProgramKey } from '@/config/loan-programs';
+import type { SubmissionEmailContext } from '@/lib/submission-email-context';
 
 function maskSsn(ssn?: string): string {
   if (!ssn?.trim()) return '—';
@@ -29,7 +30,8 @@ export function buildSubmissionOnePager(
   metrics: LoanMetrics,
   warnings: string[],
   aiSummary: string,
-  applicationId: string
+  applicationId: string,
+  context?: SubmissionEmailContext,
 ): { subject: string; text: string; html: string } {
   const b = app.borrower;
   const e = app.entity;
@@ -39,10 +41,15 @@ export function buildSubmissionOnePager(
     : 'Not selected';
 
   const borrowerName = `${b.firstName} ${b.lastName}`.trim();
-  const subject = `Investor Hub — ${borrowerName} · ${programLabel}`;
+  const loanDisplay = money(lr.requestedLoanAmount) || '—';
+  const routing = context?.routing;
+  const subject = routing
+    ? `Investor Hub — ${borrowerName} · ${programLabel} · ${loanDisplay} → ${routing.toName}`
+    : `Investor Hub — ${borrowerName} · ${programLabel}`;
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || '';
   const portfolioLink = appUrl ? `${appUrl}/portfolio/${applicationId}` : '';
+  const portalLink = appUrl ? `${appUrl}/portal` : '';
   const adminLink = appUrl ? `${appUrl}/ops/investor-hub` : '';
 
   const uploadedDocs = (app.documents || []).filter(d => d.status === 'uploaded').map(d => d.label);
@@ -73,6 +80,13 @@ export function buildSubmissionOnePager(
     line('Program', programLabel),
     line('Deal Stage', app.dealStage?.replace(/_/g, ' ')),
     line('Transaction', lr.transactionType?.replace(/_/g, ' ')),
+    '',
+    routing
+      ? `ROUTING\n${'─'.repeat(24)}\nPrimary: ${routing.toName} (${routing.to})\nCC: ${routing.cc.join(', ')}\nLoan amount tier: ${routing.tier} ($${routing.loanAmount.toLocaleString()})`
+      : '',
+    context?.shapeResult
+      ? `\nSHAPE CRM\n${'─'.repeat(24)}\nAction: ${context.shapeResult.action || '—'}\nLead ID: ${context.shapeResult.id || '—'}${context.shapeResult.matchedExisting ? ' (matched existing)' : ' (new lead)'}${context.shapeResult.nameMismatch ? `\n⚠ ${context.shapeResult.nameMismatch}` : ''}${context.shapeResult.leadSource ? `\nPrior source: ${context.shapeResult.leadSource}` : ''}`
+      : '',
     '',
     'BORROWER',
     '─'.repeat(24),
@@ -121,11 +135,21 @@ export function buildSubmissionOnePager(
     '─'.repeat(24),
     aiSummary || '—',
     '',
+    context?.transcript?.found
+      ? `PRIOR CALL TRANSCRIPT SUMMARY\n${'─'.repeat(24)}\n${context.transcript.statusLabel ? `Call status: ${context.transcript.statusLabel}\n` : ''}${context.transcript.callDate ? `Call date: ${context.transcript.callDate}\n` : ''}${context.transcript.summary}`
+      : context?.transcript
+        ? 'PRIOR CALL TRANSCRIPT\n─\nNo matching inbound call transcript found for this phone.'
+        : '',
+    '',
     uploadedDocs.length ? `Documents uploaded: ${uploadedDocs.join(', ')}` : '',
     notUploadedDocs.length ? `Not yet uploaded: ${notUploadedDocs.join(', ')}` : '',
+    uploadedDocs.length
+      ? '\nDocument storage: Supabase bucket `investor-documents` (private). Staff: Investor Hub admin or ops portal.'
+      : '',
     app.additionalNotes ? `\nADDITIONAL NOTES\n${app.additionalNotes}` : '',
     '',
     portfolioLink ? `Portfolio: ${portfolioLink}` : '',
+    portalLink ? `Customer portal (magic link sign-in): ${portalLink}` : '',
     adminLink ? `Staff admin: ${adminLink}` : '',
   ];
 
@@ -139,7 +163,8 @@ export function buildSubmissionOnePager(
   <div style="background: #14213D; color: #fff; padding: 20px 24px; border-radius: 8px 8px 0 0;">
     <p style="margin: 0 0 4px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7;">QuestRock Investor Hub</p>
     <h1 style="margin: 0; font-size: 20px; font-weight: 600;">New Submission — ${borrowerName}</h1>
-    <p style="margin: 8px 0 0; font-size: 14px; opacity: 0.85;">${programLabel} · ${lr.transactionType?.replace(/_/g, ' ') || 'Transaction TBD'}</p>
+    <p style="margin: 8px 0 0; font-size: 14px; opacity: 0.85;">${programLabel} · ${lr.transactionType?.replace(/_/g, ' ') || 'Transaction TBD'} · ${loanDisplay}</p>
+    ${routing ? `<p style="margin: 6px 0 0; font-size: 12px; opacity: 0.75;">Routed to <strong>${routing.toName}</strong> · CC: ${routing.cc.join(', ')}</p>` : ''}
   </div>
   <div style="border: 1px solid #e5e2db; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
     <table style="width: 100%; font-size: 13px; border-collapse: collapse; margin-bottom: 20px;">
@@ -166,7 +191,16 @@ export function buildSubmissionOnePager(
     <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin: 0 0 8px;">Summary</h2>
     <p style="font-size: 14px; margin: 0 0 20px; background: #f7f5f0; padding: 14px; border-radius: 6px;">${aiSummary || '—'}</p>
 
-    ${portfolioLink ? `<p style="margin: 0;"><a href="${portfolioLink}" style="color: #1f6f54; font-weight: 600;">View portfolio →</a> · <a href="${adminLink}" style="color: #2e5c8a;">Staff admin →</a></p>` : ''}
+    ${context?.transcript?.found ? `
+    <h2 style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin: 0 0 8px;">Prior Call Transcript</h2>
+    <p style="font-size: 13px; margin: 0 0 20px; background: #eff6ff; padding: 14px; border-radius: 6px; white-space: pre-wrap;">${context.transcript.summary.replace(/</g, '&lt;')}</p>
+    ` : ''}
+
+    ${context?.shapeResult?.id ? `
+    <p style="font-size: 12px; color: #6b7280; margin: 0 0 12px;">Shape lead #${context.shapeResult.id} · ${context.shapeResult.action}${context.shapeResult.nameMismatch ? ` · ⚠ ${context.shapeResult.nameMismatch}` : ''}</p>
+    ` : ''}
+
+    ${portalLink || portfolioLink ? `<p style="margin: 0 0 8px;"><a href="${portalLink || portfolioLink}" style="color: #1f6f54; font-weight: 600;">Customer portal →</a>${portfolioLink ? ` · <a href="${portfolioLink}" style="color: #1f6f54;">Portfolio view</a>` : ''}${adminLink ? ` · <a href="${adminLink}" style="color: #2e5c8a;">Staff admin →</a>` : ''}</p>` : ''}
 
     <hr style="border: none; border-top: 1px solid #e5e2db; margin: 24px 0;">
     <pre style="font-size: 11px; white-space: pre-wrap; color: #6b7280; margin: 0; font-family: ui-monospace, monospace;">${text.replace(/</g, '&lt;')}</pre>

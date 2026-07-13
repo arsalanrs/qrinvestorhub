@@ -2,26 +2,24 @@ import 'server-only';
 import type { InvestorApplication } from '@/types/investor-application';
 import type { LoanMetrics } from '@/lib/loan-calculations';
 import { buildSubmissionOnePager } from '@/lib/submission-one-pager';
+import type { SubmissionEmailContext } from '@/lib/submission-email-context';
+import type { SubmissionEmailRouting } from '@/lib/investor-submission-routing';
 
 export type SendSubmissionEmailResult =
-  | { sent: true; channel: 'formspree' | 'resend' }
+  | { sent: true; channel: 'formspree' | 'resend'; to: string; cc: string[] }
   | { sent: false; skipped: true; reason: string }
   | { sent: false; error: string };
-
-const DEFAULT_NOTIFY_EMAIL = 'nikksmith@questrock.com';
-
-function getNotifyEmails(): string[] {
-  const raw = process.env.INVESTOR_SUBMISSION_NOTIFY_EMAIL || DEFAULT_NOTIFY_EMAIL;
-  return raw.split(',').map(e => e.trim()).filter(Boolean);
-}
 
 async function sendViaFormspree(
   endpoint: string,
   subject: string,
   text: string,
   replyTo: string,
-  borrowerName: string
+  borrowerName: string,
+  routing: SubmissionEmailRouting,
 ): Promise<SendSubmissionEmailResult> {
+  const ccList = [...new Set(routing.cc)].filter(Boolean);
+
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -31,9 +29,13 @@ async function sendViaFormspree(
     body: JSON.stringify({
       _subject: subject,
       _replyto: replyTo,
+      _cc: ccList.join(','),
       name: borrowerName,
       email: replyTo,
       message: text,
+      routed_to: routing.to,
+      routed_to_name: routing.toName,
+      loan_amount: routing.loanAmount,
     }),
   });
 
@@ -43,14 +45,15 @@ async function sendViaFormspree(
     return { sent: false, error: `Formspree ${res.status}: ${body}` };
   }
 
-  return { sent: true, channel: 'formspree' };
+  return { sent: true, channel: 'formspree', to: routing.to, cc: routing.cc };
 }
 
 async function sendViaResend(
   subject: string,
   html: string,
   text: string,
-  replyTo: string
+  replyTo: string,
+  routing: SubmissionEmailRouting,
 ): Promise<SendSubmissionEmailResult> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   if (!apiKey) {
@@ -61,8 +64,6 @@ async function sendViaResend(
     || process.env.REPORT_FROM?.trim()
     || 'QuestRock Investor Hub <notifications@questrock.com>';
 
-  const to = getNotifyEmails();
-
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -71,7 +72,8 @@ async function sendViaResend(
     },
     body: JSON.stringify({
       from,
-      to,
+      to: [routing.to],
+      cc: routing.cc,
       subject,
       html,
       text,
@@ -85,7 +87,7 @@ async function sendViaResend(
     return { sent: false, error: `Resend ${res.status}: ${body}` };
   }
 
-  return { sent: true, channel: 'resend' };
+  return { sent: true, channel: 'resend', to: routing.to, cc: routing.cc };
 }
 
 export async function sendSubmissionEmail(
@@ -93,14 +95,16 @@ export async function sendSubmissionEmail(
   metrics: LoanMetrics,
   warnings: string[],
   aiSummary: string,
-  applicationId: string
+  applicationId: string,
+  context: SubmissionEmailContext,
 ): Promise<SendSubmissionEmailResult> {
   const { subject, text, html } = buildSubmissionOnePager(
     app,
     metrics,
     warnings,
     aiSummary,
-    applicationId
+    applicationId,
+    context,
   );
 
   const borrowerName = `${app.borrower.firstName} ${app.borrower.lastName}`.trim();
@@ -109,7 +113,14 @@ export async function sendSubmissionEmail(
   const formspreeUrl = process.env.FORMSPREE_INVESTOR_SUBMISSION_URL?.trim();
   if (formspreeUrl) {
     try {
-      return await sendViaFormspree(formspreeUrl, subject, text, replyTo, borrowerName);
+      return await sendViaFormspree(
+        formspreeUrl,
+        subject,
+        text,
+        replyTo,
+        borrowerName,
+        context.routing,
+      );
     } catch (err) {
       console.error('[submission-email] Formspree fetch failed:', err);
     }
@@ -117,7 +128,7 @@ export async function sendSubmissionEmail(
 
   if (process.env.RESEND_API_KEY?.trim()) {
     try {
-      return await sendViaResend(subject, html, text, replyTo);
+      return await sendViaResend(subject, html, text, replyTo, context.routing);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[submission-email] Resend fetch failed:', msg);

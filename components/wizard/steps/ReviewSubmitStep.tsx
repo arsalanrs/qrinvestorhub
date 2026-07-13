@@ -3,6 +3,7 @@
 import { useFormContext, Controller, useWatch } from 'react-hook-form';
 import type { InvestorApplication } from '@/types/investor-application';
 import { WizardCard } from '@/components/ui/WizardCard';
+import { DictationTextarea } from '@/components/ui/DictationTextarea';
 import { LoanLedger } from '@/components/wizard/LoanLedger';
 import { PROGRAM_CONFIGS } from '@/config/loan-programs';
 import type { ProgramKey } from '@/config/loan-programs';
@@ -39,10 +40,11 @@ const CONSENTS = [
   { name: 'noOwnerOccupancy' as const, label: 'I understand that owner-occupancy of the subject property is not permitted under this loan program.' },
   { name: 'contactConsent' as const, label: 'I consent to being contacted by QuestRock or its lending partners via phone, email, or SMS regarding this application.' },
   { name: 'electronicComms' as const, label: 'I agree to receive electronic communications and disclosures related to this loan application.' },
+  { name: 'creditPullConsent' as const, label: 'I agree to have my credit pulled as part of this loan application.' },
 ];
 
 export function ReviewSubmitStep() {
-  const { control, register, watch } = useFormContext<InvestorApplication>();
+  const { control, watch } = useFormContext<InvestorApplication>();
   const formValues = useWatch({ control }) as InvestorApplication;
   const consents = watch('consents');
   const allConsented = consents && Object.values(consents).every(Boolean);
@@ -132,22 +134,30 @@ export function ReviewSubmitStep() {
 
       {/* Additional Notes */}
       <WizardCard title="Additional Notes" subtitle="Anything else you'd like QuestRock to know about this deal?">
-        <textarea
-          {...register('additionalNotes')}
-          rows={4}
-          placeholder="Enter any additional context, deal background, special circumstances, or questions you have for the QuestRock team..."
-          style={{
-            width: '100%',
-            padding: '10px 12px',
-            border: '1.5px solid var(--line)',
-            borderRadius: '2px',
-            fontSize: '14px',
-            fontFamily: 'Inter, sans-serif',
-            color: 'var(--ink)',
-            outline: 'none',
-            background: '#fff',
-            resize: 'vertical',
-          }}
+        <Controller
+          control={control}
+          name="additionalNotes"
+          render={({ field }) => (
+            <DictationTextarea
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              rows={4}
+              placeholder="Enter any additional context, deal background, special circumstances, or questions you have for the QuestRock team..."
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1.5px solid var(--line)',
+                borderRadius: '2px',
+                fontSize: '14px',
+                fontFamily: 'Inter, sans-serif',
+                color: 'var(--ink)',
+                outline: 'none',
+                background: '#fff',
+                resize: 'vertical',
+              }}
+            />
+          )}
         />
       </WizardCard>
 
