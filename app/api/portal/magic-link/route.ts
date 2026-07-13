@@ -2,6 +2,7 @@ import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { normalizePortalEmail, portalEmailHasApplications } from '@/lib/portal-auth';
+import { authCallbackUrl } from '@/lib/get-app-url';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,16 +22,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const origin =
-      req.headers.get('origin')?.replace(/\/$/, '')
-      || process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')
-      || 'http://localhost:3003';
-
     const supabase = await createSupabaseServerClient();
+    const emailRedirectTo = authCallbackUrl('/portal');
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${origin}/auth/callback?redirectTo=${encodeURIComponent('/portal')}`,
+        emailRedirectTo,
       },
     });
 
