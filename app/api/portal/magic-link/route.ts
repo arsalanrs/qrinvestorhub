@@ -1,7 +1,7 @@
 import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/server';
-import { normalizePortalEmail, portalEmailHasApplications } from '@/lib/portal-auth';
+import { normalizePortalEmail, getPortalLoginContext } from '@/lib/portal-auth';
 import {
   generateLoginToken,
   hashLoginToken,
@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Valid email required' }, { status: 400 });
     }
 
-    const hasApps = await portalEmailHasApplications(email);
-    if (!hasApps) {
+    const { hasApplications, firstName } = await getPortalLoginContext(email);
+    if (!hasApplications) {
       return NextResponse.json({
         ok: true,
         sent: false,
@@ -49,7 +49,10 @@ export async function POST(req: NextRequest) {
     }
 
     const loginUrl = buildPortalVerifyUrl(token);
-    const zapPayload = buildPortalLoginZapierPayload(email, loginUrl);
+    const zapPayload = buildPortalLoginZapierPayload(email, loginUrl, {
+      firstName,
+      expiresInMinutes: TOKEN_TTL_MINUTES,
+    });
     const zapResult = await notifyZapierPortalLogin(zapPayload);
 
     if (!zapResult.sent) {

@@ -30,8 +30,8 @@
 <body>
 <div class="wrap">
   <p style="font-family:IBM Plex Mono,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate)">QuestRock Investor Hub</p>
-  <h1>Zapier Setup — One Webhook, Three Automations</h1>
-  <p class="meta">When a borrower submits at <code>/investor-hub/apply</code>, the app saves to Supabase and POSTs a JSON payload to your Catch Hook. Zapier handles Shape CRM, staff alert email, and customer portal welcome email.</p>
+  <h1>Zapier Setup — Two Zaps</h1>
+  <p class="meta"><strong>Zap #1</strong> — application submitted (Shape + staff email + welcome email). <strong>Zap #2</strong> — portal sign-in link when a customer requests login at <code>/portal</code>. No Supabase Auth emails.</p>
 
   <div class="note">
     <strong>Formspree is NOT used here.</strong> IT Support Formspree stays on Intelligence Hub only. Investor Hub uses this webhook + Zapier for all post-submit email and Shape sync.
@@ -40,8 +40,10 @@
   <h2>Step 0 — Vercel env vars</h2>
   <div class="card">
     <pre>ZAPIER_INVESTOR_SUBMISSION_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/XXXXX/YYYYY/
+ZAPIER_PORTAL_LOGIN_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/XXXXX/ZZZZZ/
+PORTAL_SESSION_SECRET=your-long-random-secret
 ENABLE_SHAPE_SYNC=false
-NEXT_PUBLIC_APP_URL=https://your-investor-hub.vercel.app
+NEXT_PUBLIC_APP_URL=https://qrinvestorhub.vercel.app
 INVESTOR_EMAIL_RAY=rconway@questrock.com
 INVESTOR_EMAIL_NIKK=nikksmith@questrock.com
 INVESTOR_EMAIL_BASTIAN=bastianjohnston@questrock.com
@@ -51,7 +53,8 @@ INVESTOR_EMAIL_CC_JASON=jfriday@questrock.com
 # ZAPIER_WEBHOOK_SECRET=your-random-secret</pre>
   </div>
 
-  <h2>Step 1 — Create the Catch Hook (Trigger)</h2>
+  <h2>Zap #1 — Application submitted</h2>
+  <h3>Step 1 — Create Catch Hook (Trigger)</h3>
   <ol class="steps">
     <li>Zapier → <strong>Create Zap</strong></li>
     <li>Trigger: <strong>Webhooks by Zapier</strong> → <strong>Catch Hook</strong></li>
@@ -126,7 +129,47 @@ INVESTOR_EMAIL_CC_JASON=jfriday@questrock.com
     <tr><td>Body</td><td><code>emails customer html</code></td></tr>
     <tr><td>Reply-To</td><td><code>emails customer replyTo</code></td></tr>
   </table>
-  <p>Portal link is also at <code>links portal</code>. Magic-link sign-in uses <strong>Supabase Auth</strong> (not this email) — customer clicks portal, enters email, gets OTP from Supabase.</p>
+  <p>Portal welcome link is at <code>links portal</code>. Sign-in uses <strong>Zap #2</strong> below (not this email).</p>
+
+  <h2>Zap #2 — Portal sign-in link (separate Catch Hook)</h2>
+  <div class="note">Required. Uses its own webhook URL — <code>ZAPIER_PORTAL_LOGIN_WEBHOOK_URL</code>. Fires when a customer requests a sign-in link at <code>/portal</code>.</div>
+
+  <h3>Step 1 — Create Zap #2</h3>
+  <ol class="steps">
+    <li>Zapier → <strong>Create Zap</strong> (new, separate from submission Zap)</li>
+    <li>Trigger: <strong>Webhooks by Zapier</strong> → <strong>Catch Hook</strong></li>
+    <li>Copy the new webhook URL → Vercel: <code>ZAPIER_PORTAL_LOGIN_WEBHOOK_URL</code></li>
+    <li>Action: <strong>Microsoft Outlook</strong> → <strong>Send Email</strong></li>
+  </ol>
+
+  <table>
+    <tr><th>Outlook field</th><th>Map from Catch Hook</th></tr>
+    <tr><td>To</td><td><code>emails customer to</code></td></tr>
+    <tr><td>Subject</td><td><code>emails customer subject</code></td></tr>
+    <tr><td>Body format</td><td><strong>HTML</strong></td></tr>
+    <tr><td>Body</td><td><code>emails customer html</code></td></tr>
+  </table>
+
+  <p>Payload always has <code>event</code> = <code>investor_portal.login_requested</code> and a ready-made <code>loginUrl</code> (one-time link, 30 min).</p>
+
+  <pre>{
+  "event": "investor_portal.login_requested",
+  "email": "borrower@example.com",
+  "loginUrl": "https://qrinvestorhub.vercel.app/auth/portal-verify?token=...",
+  "expiresInMinutes": 30,
+  "emails": {
+    "customer": {
+      "to": "borrower@example.com",
+      "subject": "Sign in to QuestRock Investor Portal",
+      "html": "...",
+      "text": "..."
+    }
+  }
+}</pre>
+
+  <p>Test Zap #2 locally after pasting your Catch Hook URL:</p>
+  <pre>ZAPIER_PORTAL_LOGIN_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/... \
+  npm run zapier:test-login</pre>
 
   <h2>Step 3 — Test end-to-end</h2>
   <ol class="steps">
@@ -136,7 +179,7 @@ INVESTOR_EMAIL_CC_JASON=jfriday@questrock.com
     <li>Verify Shape lead created/updated</li>
     <li>Verify staff email landed in correct inbox (check CC)</li>
     <li>Verify customer welcome email to borrower</li>
-    <li>Customer signs in at <code>/portal</code> with magic link</li>
+    <li>Customer signs in at <code>/portal</code> → receives sign-in email from <strong>Zap #2</strong> → clicks link → logged in</li>
   </ol>
 
   <h2>Payload reference (top-level keys)</h2>
@@ -171,16 +214,15 @@ INVESTOR_EMAIL_CC_JASON=jfriday@questrock.com
     <p><strong>Webhook not firing:</strong> Check Vercel logs for <code>[submit] Zapier webhook</code>. Confirm <code>ZAPIER_INVESTOR_SUBMISSION_WEBHOOK_URL</code> is set on Production.</p>
     <p><strong>Empty HTML in email:</strong> In Gmail/Outlook step, choose "HTML" body type and map <code>emails staff html</code> — not the plain text field.</p>
     <p><strong>Shape duplicate leads:</strong> Add a Shape search step on email/phone before create.</p>
-    <p><strong>Customer can't log in:</strong> Supabase Auth → URL Configuration → add <code>{NEXT_PUBLIC_APP_URL}/auth/callback</code>.</p>
+    <p><strong>Customer can't log in:</strong> Confirm <code>ZAPIER_PORTAL_LOGIN_WEBHOOK_URL</code> is set on Vercel, Zap #2 is ON, and <code>portal_login_tokens</code> migration ran in Supabase.</p>
     <p><strong>Double Shape sync:</strong> Keep <code>ENABLE_SHAPE_SYNC=false</code> when Zapier owns Shape.</p>
   </div>
 
-  <h2>How many Zaps total?</h2>
+  <h2>How many Zaps?</h2>
   <table>
-    <tr><th>Option</th><th>Count</th><th>When to use</th></tr>
-    <tr><td><strong>Recommended</strong> — 1 Zap, Paths A+B+C</td><td>1</td><td>Simplest; one webhook URL; all actions stay in sync</td></tr>
-    <tr><td>3 separate Zaps, same Catch Hook URL</td><td>3</td><td>Only if different teams own Shape vs email; Zapier allows multiple Zaps on one hook</td></tr>
-    <tr><td>Supabase trigger instead of webhook</td><td>1+</td><td>Backup if webhook fails — trigger on <code>investor_applications</code> insert where status=submitted</td></tr>
+    <tr><th>Zap</th><th>Webhook env var</th><th>Purpose</th></tr>
+    <tr><td><strong>#1 Submission</strong></td><td><code>ZAPIER_INVESTOR_SUBMISSION_WEBHOOK_URL</code></td><td>Shape + staff alert + welcome email</td></tr>
+    <tr><td><strong>#2 Portal login</strong></td><td><code>ZAPIER_PORTAL_LOGIN_WEBHOOK_URL</code></td><td>Sign-in link email (Outlook)</td></tr>
   </table>
 
   <p class="meta" style="margin-top:40px">Source: <code>lib/zapier/build-submission-payload.ts</code> · Repo: qrinvestorhub</p>

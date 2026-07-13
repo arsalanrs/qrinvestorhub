@@ -20,18 +20,24 @@ export type PortalLoginZapierPayload = {
   };
 };
 
-export function buildPortalLoginZapierPayload(email: string, loginUrl: string): PortalLoginZapierPayload {
-  const { subject, text } = buildPortalLoginEmailText(email, loginUrl);
+export function buildPortalLoginZapierPayload(
+  email: string,
+  loginUrl: string,
+  options?: { firstName?: string | null; expiresInMinutes?: number },
+): PortalLoginZapierPayload {
+  const expiresInMinutes = options?.expiresInMinutes ?? 30;
+  const emailOpts = { firstName: options?.firstName, expiresInMinutes };
+  const { subject, text } = buildPortalLoginEmailText(email, loginUrl, emailOpts);
   return {
     event: 'investor_portal.login_requested',
     email,
     loginUrl,
-    expiresInMinutes: 30,
+    expiresInMinutes,
     emails: {
       customer: {
         to: email,
         subject,
-        html: buildPortalLoginEmailHtml(email, loginUrl),
+        html: buildPortalLoginEmailHtml(email, loginUrl, emailOpts),
         text,
       },
     },
@@ -51,15 +57,13 @@ export type ZapierNotifyResult =
 export async function notifyZapierPortalLogin(
   payload: PortalLoginZapierPayload,
 ): Promise<ZapierNotifyResult> {
-  const webhookUrl =
-    process.env.ZAPIER_PORTAL_LOGIN_WEBHOOK_URL?.trim()
-    || process.env.ZAPIER_INVESTOR_SUBMISSION_WEBHOOK_URL?.trim();
+  const webhookUrl = process.env.ZAPIER_PORTAL_LOGIN_WEBHOOK_URL?.trim();
 
   if (!webhookUrl) {
     return {
       sent: false,
       skipped: true,
-      reason: 'ZAPIER_PORTAL_LOGIN_WEBHOOK_URL not configured',
+      reason: 'ZAPIER_PORTAL_LOGIN_WEBHOOK_URL not configured (separate Catch Hook required)',
     };
   }
 

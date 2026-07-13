@@ -31,16 +31,36 @@ export async function getPortalSessionEmail(): Promise<string | null> {
 }
 
 export async function portalEmailHasApplications(email: string): Promise<boolean> {
+  const ctx = await getPortalLoginContext(email);
+  return ctx.hasApplications;
+}
+
+export async function getPortalLoginContext(email: string): Promise<{
+  hasApplications: boolean;
+  firstName: string | null;
+}> {
   const normalized = normalizePortalEmail(email);
-  if (!normalized.includes('@')) return false;
+  if (!normalized.includes('@')) {
+    return { hasApplications: false, firstName: null };
+  }
 
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from('investor_applications')
-    .select('borrower')
-    .neq('status', 'draft');
+    .select('borrower, updated_at')
+    .neq('status', 'draft')
+    .order('updated_at', { ascending: false });
 
   if (error) throw error;
 
-  return (data || []).some(row => borrowerMatchesPortalEmail(row.borrower, normalized));
+  for (const row of data || []) {
+    if (!borrowerMatchesPortalEmail(row.borrower, normalized)) continue;
+    const b = row.borrower as { firstName?: string } | null;
+    return {
+      hasApplications: true,
+      firstName: b?.firstName?.trim() || null,
+    };
+  }
+
+  return { hasApplications: false, firstName: null };
 }
