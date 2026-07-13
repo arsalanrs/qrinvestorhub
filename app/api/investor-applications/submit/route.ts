@@ -162,8 +162,9 @@ export async function POST(req: NextRequest) {
           : ('skipped' in zapResult && zapResult.skipped)
             ? 'skipped'
             : 'failed';
-        if ('error' in zapResult && zapResult.error) {
-          console.error('[submit] Zapier webhook error:', zapResult.error);
+        if (!zapResult.sent) {
+          const detail = 'error' in zapResult ? zapResult.error : zapResult.reason;
+          console.error('[submit] Zapier webhook failed:', detail);
         }
       } catch (zapErr) {
         console.error('[submit] Zapier webhook error:', zapErr);
