@@ -27,6 +27,16 @@ interface AdminApplication {
   additional_notes: string | null;
   submitted_at: string | null;
   created_at: string;
+  shape_lead_id?: string | null;
+  archived?: boolean;
+  archived_at?: string | null;
+  property_city?: string;
+  property_state?: string;
+}
+
+interface ShapeLoOption {
+  name: string;
+  depursLo: number;
 }
 
 function borrowerName(app: AdminApplication) {
@@ -55,6 +65,14 @@ export default function InvestorHubAdminPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [programFilter, setProgramFilter] = useState('all');
+  const [stateFilter, setStateFilter] = useState('all');
+  const [cityFilter, setCityFilter] = useState('');
+  const [daysFilter, setDaysFilter] = useState('all');
+  const [showArchived, setShowArchived] = useState(false);
+  const [shapeRoster, setShapeRoster] = useState<ShapeLoOption[]>([]);
+  const [assignLo, setAssignLo] = useState('');
+  const [actionBusy, setActionBusy] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
 
   useEffect(() => {
     try {
@@ -74,7 +92,8 @@ export default function InvestorHubAdminPage() {
 
   const loadApplications = (activeSession: AdminSession) => {
     setLoading(true);
-    fetch('/api/admin/investor-applications', {
+    const qs = showArchived ? '?includeArchived=1' : '';
+    fetch(`/api/admin/investor-applications${qs}`, {
       headers: {
         'x-admin-email': activeSession.email,
         'x-admin-password': activeSession.password,
@@ -99,7 +118,81 @@ export default function InvestorHubAdminPage() {
 
   useEffect(() => {
     if (session) loadApplications(session);
-  }, [session]);
+  }, [session, showArchived]);
+
+  useEffect(() => {
+    fetch('/api/admin/shape-roster')
+      .then(res => res.json())
+      .then(json => setShapeRoster(json.roster || []))
+      .catch(() => {});
+  }, []);
+
+  const adminFetch = async (activeSession: AdminSession, path: string, init?: RequestInit) => {
+    const res = await fetch(path, {
+      ...init,
+      headers: {
+        ...(init?.headers || {}),
+        'x-admin-email': activeSession.email,
+        'x-admin-password': activeSession.password,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (res.status === 401) {
+      sessionStorage.removeItem(STORAGE_KEY);
+      setSession(null);
+      throw new Error('Session expired');
+    }
+    return res;
+  };
+
+  const runShapeAction = async (
+    action: 'create' | 'sync' | 'delete' | 'assign',
+    depursLo?: number,
+  ) => {
+    if (!session || !selected) return;
+    setActionBusy(action);
+    setActionMessage('');
+    try {
+      const res = await adminFetch(session, `/api/admin/investor-applications/${selected.id}`, {
+        method: 'POST',
+        body: JSON.stringify({ action, depursLo }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Action failed');
+      setActionMessage(
+        action === 'assign'
+          ? `Assigned to ${json.assignedTo || 'LO'}`
+          : action === 'delete'
+            ? 'Shape lead marked removed'
+            : `Shape lead ${json.shapeLeadId}`,
+      );
+      loadApplications(session);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : 'Action failed');
+    } finally {
+      setActionBusy('');
+    }
+  };
+
+  const toggleArchive = async (archived: boolean) => {
+    if (!session || !selected) return;
+    setActionBusy('archive');
+    setActionMessage('');
+    try {
+      const res = await adminFetch(session, `/api/admin/investor-applications/${selected.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ archived }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Archive failed');
+      setActionMessage(archived ? 'Application archived' : 'Application restored');
+      loadApplications(session);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : 'Archive failed');
+    } finally {
+      setActionBusy('');
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,13 +226,33 @@ export default function InvestorHubAdminPage() {
     return { total: applications.length, submitted, drafts, flagged };
   }, [applications]);
 
+  const stateOptions = useMemo(() => {
+    const states = new Set<string>();
+    applications.forEach(app => {
+      if (app.property_state) states.add(app.property_state.toUpperCase());
+    });
+    return [...states].sort();
+  }, [applications]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const cityQ = cityFilter.trim().toLowerCase();
+    const daysNum = daysFilter === 'all' ? null : Number(daysFilter);
+    const cutoff = daysNum
+      ? Date.now() - daysNum * 24 * 60 * 60 * 1000
+      : null;
+
     return applications.filter(app => {
       if (statusFilter === 'submitted' && !app.submitted_at) return false;
       if (statusFilter === 'draft' && app.submitted_at) return false;
       if (statusFilter === 'flagged' && !(app.guideline_warnings?.length || 0)) return false;
       if (programFilter !== 'all' && app.loan_program !== programFilter) return false;
+      if (stateFilter !== 'all' && (app.property_state || '').toUpperCase() !== stateFilter) return false;
+      if (cityQ && !(app.property_city || '').toLowerCase().includes(cityQ)) return false;
+      if (cutoff) {
+        const ref = app.submitted_at || app.created_at;
+        if (!ref || new Date(ref).getTime() < cutoff) return false;
+      }
       if (!q) return true;
       const hay = [
         borrowerName(app),
@@ -148,13 +261,15 @@ export default function InvestorHubAdminPage() {
         app.id,
         programLabel(app.loan_program),
         app.status,
+        app.property_city,
+        app.property_state,
       ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [applications, search, statusFilter, programFilter]);
+  }, [applications, search, statusFilter, programFilter, stateFilter, cityFilter, daysFilter]);
 
   if (!session) {
     return (
@@ -269,6 +384,34 @@ export default function InvestorHubAdminPage() {
             </option>
           ))}
         </select>
+        <select value={stateFilter} onChange={e => setStateFilter(e.target.value)}>
+          <option value="all">All states</option>
+          {stateOptions.map(st => (
+            <option key={st} value={st}>{st}</option>
+          ))}
+        </select>
+        <input
+          type="text"
+          placeholder="Filter city…"
+          value={cityFilter}
+          onChange={e => setCityFilter(e.target.value)}
+          className="admin-search"
+          style={{ flex: '0 1 140px', minWidth: 120 }}
+        />
+        <select value={daysFilter} onChange={e => setDaysFilter(e.target.value)}>
+          <option value="all">All time</option>
+          <option value="7">Last 7 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+        <label className="admin-check">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={e => setShowArchived(e.target.checked)}
+          />
+          Show archived
+        </label>
         <span className="admin-count">{filtered.length} shown</span>
       </div>
 
@@ -283,6 +426,7 @@ export default function InvestorHubAdminPage() {
               <thead>
                 <tr>
                   <th>Borrower</th>
+                  <th>Location</th>
                   <th>Program</th>
                   <th>Amount</th>
                   <th>Status</th>
@@ -300,12 +444,15 @@ export default function InvestorHubAdminPage() {
                   return (
                     <tr
                       key={app.id}
-                      className={selected?.id === app.id ? 'selected' : ''}
-                      onClick={() => setSelected(app)}
+                      className={`${selected?.id === app.id ? 'selected' : ''}${app.archived ? ' archived' : ''}`}
+                      onClick={() => { setSelected(app); setActionMessage(''); setAssignLo(''); }}
                     >
                       <td>
                         <strong>{borrowerName(app)}</strong>
                         <span>{app.borrower?.email || '—'}</span>
+                      </td>
+                      <td>
+                        {[app.property_city, app.property_state].filter(Boolean).join(', ') || '—'}
                       </td>
                       <td>{programLabel(app.loan_program)}</td>
                       <td>{amount}</td>
@@ -360,6 +507,11 @@ export default function InvestorHubAdminPage() {
                   },
                   { label: 'Entity', value: selected.entity?.entityName || selected.entity?.borrowingAs || '—' },
                   { label: 'Deal stage', value: selected.deal_stage || '—' },
+                  {
+                    label: 'Property',
+                    value: [selected.property_city, selected.property_state].filter(Boolean).join(', ') || '—',
+                  },
+                  { label: 'Shape lead', value: selected.shape_lead_id || 'Not linked' },
                 ].map(({ label, value }) => (
                   <div key={label} className="admin-detail-card">
                     <span>{label}</span>
@@ -401,6 +553,69 @@ export default function InvestorHubAdminPage() {
                   <p>{selected.additional_notes}</p>
                 </div>
               )}
+
+              <div className="admin-panel admin-panel-shape">
+                <h3>Shape CRM</h3>
+                <p className="admin-shape-id">
+                  Lead ID: <strong>{selected.shape_lead_id || 'None'}</strong>
+                  {selected.archived && <span className="admin-archived-badge">Archived</span>}
+                </p>
+                <div className="admin-shape-actions">
+                  <button
+                    type="button"
+                    className="qr-btn qr-btn-green"
+                    disabled={Boolean(actionBusy)}
+                    onClick={() => runShapeAction(selected.shape_lead_id ? 'sync' : 'create')}
+                  >
+                    {actionBusy === 'create' || actionBusy === 'sync' ? 'Working…' : selected.shape_lead_id ? 'Sync to Shape' : 'Create in Shape'}
+                  </button>
+                  {selected.shape_lead_id && (
+                    <button
+                      type="button"
+                      className="qr-btn qr-btn-secondary"
+                      disabled={Boolean(actionBusy)}
+                      onClick={() => {
+                        if (window.confirm('Mark this Shape lead as removed (Do Not Contact)?')) {
+                          void runShapeAction('delete');
+                        }
+                      }}
+                    >
+                      {actionBusy === 'delete' ? 'Removing…' : 'Remove from Shape'}
+                    </button>
+                  )}
+                </div>
+                {selected.shape_lead_id && shapeRoster.length > 0 && (
+                  <div className="admin-assign-row">
+                    <select value={assignLo} onChange={e => setAssignLo(e.target.value)}>
+                      <option value="">Assign to LO…</option>
+                      {shapeRoster.map(lo => (
+                        <option key={lo.depursLo} value={String(lo.depursLo)}>{lo.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="qr-btn qr-btn-secondary"
+                      disabled={!assignLo || Boolean(actionBusy)}
+                      onClick={() => runShapeAction('assign', Number(assignLo))}
+                    >
+                      {actionBusy === 'assign' ? 'Assigning…' : 'Assign'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="admin-shape-actions" style={{ marginBottom: 12 }}>
+                <button
+                  type="button"
+                  className="qr-btn qr-btn-secondary"
+                  disabled={Boolean(actionBusy)}
+                  onClick={() => toggleArchive(!selected.archived)}
+                >
+                  {actionBusy === 'archive' ? 'Saving…' : selected.archived ? 'Restore application' : 'Archive application'}
+                </button>
+              </div>
+
+              {actionMessage && <p className="admin-action-msg">{actionMessage}</p>}
 
               <a href={`/portfolio/${selected.id}`} target="_blank" rel="noopener noreferrer" className="admin-link">
                 Open customer portfolio →
@@ -482,6 +697,18 @@ export default function InvestorHubAdminPage() {
           color: var(--slate);
           margin-left: auto;
         }
+        .admin-check {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          color: var(--slate);
+          white-space: nowrap;
+        }
+        .admin-check input {
+          width: auto;
+          margin: 0;
+        }
         .admin-layout {
           display: grid;
           grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
@@ -535,6 +762,9 @@ export default function InvestorHubAdminPage() {
         }
         .admin-table tbody tr.selected {
           background: var(--ledger-green-soft);
+        }
+        .admin-table tbody tr.archived {
+          opacity: 0.65;
         }
         .admin-pill {
           display: inline-block;
@@ -656,6 +886,47 @@ export default function InvestorHubAdminPage() {
           font-weight: 600;
           color: var(--blue);
           text-decoration: none;
+        }
+        .admin-panel-shape {
+          background: #f8fafc;
+        }
+        .admin-shape-id {
+          font-size: 13px;
+          margin: 0 0 12px;
+          color: var(--ink-soft);
+        }
+        .admin-archived-badge {
+          display: inline-block;
+          margin-left: 8px;
+          padding: 2px 8px;
+          border-radius: 99px;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          background: #fef3c7;
+          color: #92400e;
+        }
+        .admin-shape-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+        .admin-assign-row {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+        .admin-assign-row select {
+          flex: 1;
+          min-width: 160px;
+        }
+        .admin-action-msg {
+          font-size: 13px;
+          color: var(--ledger-green);
+          margin: 0 0 12px;
+          font-weight: 600;
         }
         @media (max-width: 1100px) {
           .admin-layout {

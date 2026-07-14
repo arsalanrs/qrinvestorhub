@@ -1,5 +1,8 @@
 import 'server-only';
 
+/** Canonical production URL — used when env points at localhost on Vercel. */
+export const INVESTOR_HUB_PRODUCTION_URL = 'https://qrinvestorhub.vercel.app';
+
 function isLocalHostname(hostname: string): boolean {
   const h = hostname.toLowerCase();
   return h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local');
@@ -21,26 +24,32 @@ function isLocalOrigin(value: string): boolean {
  * point at a dev server when production env was copied from .env.local.
  */
 export function getAppOrigin(): string {
-  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const explicit =
+    process.env.INVESTOR_HUB_PUBLIC_URL?.trim()
+    || process.env.NEXT_PUBLIC_APP_URL?.trim();
   const vercelProduction = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
   const vercelUrl = process.env.VERCEL_URL?.trim();
   const onVercel = Boolean(process.env.VERCEL);
+  const isProductionDeploy = process.env.VERCEL_ENV === 'production';
 
-  if (configured && !isLocalOrigin(configured)) {
-    return normalizeOrigin(configured);
+  if (explicit && !isLocalOrigin(explicit)) {
+    return normalizeOrigin(explicit);
   }
 
   if (onVercel) {
-    if (process.env.VERCEL_ENV === 'production' && vercelProduction) {
-      return normalizeOrigin(`https://${vercelProduction}`);
+    if (isProductionDeploy) {
+      if (vercelProduction) {
+        return normalizeOrigin(`https://${vercelProduction}`);
+      }
+      return INVESTOR_HUB_PRODUCTION_URL;
     }
     if (vercelUrl) {
       return normalizeOrigin(`https://${vercelUrl}`);
     }
   }
 
-  if (configured) {
-    return normalizeOrigin(configured);
+  if (explicit) {
+    return normalizeOrigin(explicit);
   }
 
   return 'http://localhost:3003';

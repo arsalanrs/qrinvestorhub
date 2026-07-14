@@ -145,6 +145,7 @@ export async function POST(req: NextRequest) {
     }
 
     let zapierStatus: string = 'skipped';
+    let zapierDetail: string | undefined;
     if (applicationId) {
       const zapierPayload = buildZapierSubmissionPayload(
         body,
@@ -163,12 +164,13 @@ export async function POST(req: NextRequest) {
             ? 'skipped'
             : 'failed';
         if (!zapResult.sent) {
-          const detail = 'error' in zapResult ? zapResult.error : zapResult.reason;
-          console.error('[submit] Zapier webhook failed:', detail);
+          zapierDetail = 'error' in zapResult ? zapResult.error : zapResult.reason;
+          console.error('[submit] Zapier webhook failed:', zapierDetail);
         }
       } catch (zapErr) {
         console.error('[submit] Zapier webhook error:', zapErr);
         zapierStatus = 'failed';
+        zapierDetail = zapErr instanceof Error ? zapErr.message : String(zapErr);
       }
     }
 
@@ -180,6 +182,7 @@ export async function POST(req: NextRequest) {
       shapeMatchedExisting: shapeResult?.matchedExisting ?? false,
       lendingpadStatus: 'pending',
       zapierStatus,
+      zapierDetail,
       emailRouting: routing,
     });
   } catch (err) {

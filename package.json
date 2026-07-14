@@ -8,7 +8,8 @@
     "start": "next start",
     "db:apply": "node scripts/apply-supabase-migrations.mjs",
     "zapier:test": "tsx --require ./scripts/stub-server-only.cjs scripts/send-zapier-test-payloads.ts",
-    "zapier:test-login": "tsx --require ./scripts/stub-server-only.cjs scripts/test-portal-login-zapier.ts"
+    "zapier:test-login": "tsx --require ./scripts/stub-server-only.cjs scripts/test-portal-login-zapier.ts",
+    "zapier:replay": "tsx --require ./scripts/stub-server-only.cjs scripts/replay-submission-zapier.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

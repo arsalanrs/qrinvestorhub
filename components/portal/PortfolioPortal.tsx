@@ -11,6 +11,7 @@ import {
   getApplicationStatusIndex,
   getInvestorTierInfo,
 } from '@/lib/investor-status';
+import { SHOW_INVESTOR_TIER, SHOW_PORTAL_RESOURCES } from '@/lib/portal-feature-flags';
 import { PORTAL_RESOURCES } from '@/lib/investor-portal-resources';
 import { buildZillowSearchUrl } from '@/lib/zillow-link';
 import { FlowButton } from '@/components/ui/flow-button';
@@ -172,7 +173,6 @@ function PropertyCard({
 }
 
 export function PortfolioPortal({ data }: { data: PortfolioPayload }) {
-  const tierInfo = useMemo(() => getInvestorTierInfo(data.experience), [data.experience]);
   const statusIdx = getApplicationStatusIndex(data.status);
   const programLabel = data.loanProgram
     ? (PROGRAM_CONFIGS[data.loanProgram as ProgramKey]?.label || data.loanProgram)
@@ -201,6 +201,10 @@ export function PortfolioPortal({ data }: { data: PortfolioPayload }) {
       : []),
   ];
 
+  const tierInfo = useMemo(
+    () => (SHOW_INVESTOR_TIER ? getInvestorTierInfo(data.experience) : null),
+    [data.experience],
+  );
   const tierColors: Record<string, string> = {
     rookie: '#6b7280',
     pro: '#1f6f54',
@@ -224,7 +228,8 @@ export function PortfolioPortal({ data }: { data: PortfolioPayload }) {
         </Link>
       </div>
 
-      {/* Investor status */}
+      {/* Investor status — hidden until tier program launches */}
+      {SHOW_INVESTOR_TIER && tierInfo && (
       <section style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: '16px', padding: '24px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -247,6 +252,7 @@ export function PortfolioPortal({ data }: { data: PortfolioPayload }) {
           )}
         </div>
       </section>
+      )}
 
       {/* Application progress */}
       <section style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: '16px', padding: '24px', marginBottom: '20px' }}>
@@ -329,7 +335,8 @@ export function PortfolioPortal({ data }: { data: PortfolioPayload }) {
         </section>
       )}
 
-      {/* Tools & resources */}
+      {/* Tools & resources — hidden until partner integrations are live */}
+      {SHOW_PORTAL_RESOURCES && (
       <section style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
         <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: '18px', margin: '0 0 6px' }}>Tools for your portfolio</h2>
         <p style={{ fontSize: '13px', color: 'var(--slate)', margin: '0 0 16px' }}>Tips, partners, and services QuestRock investors use.</p>
@@ -352,6 +359,7 @@ export function PortfolioPortal({ data }: { data: PortfolioPayload }) {
           ))}
         </div>
       </section>
+      )}
 
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
         <FlowButton text="Start another application" variant="green" size="md" onClick={() => { window.location.href = '/investor-hub/apply'; }} />

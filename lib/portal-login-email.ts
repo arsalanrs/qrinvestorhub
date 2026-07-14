@@ -84,7 +84,7 @@ export function buildPortalLoginEmailHtml(
     <div style="font-size:13px;font-weight:700;color:#14213D;margin-bottom:12px;">In your portal</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
       ${step(1, 'Track application status and next steps from your QuestRock team.')}
-      ${step(2, 'View your portfolio, property details, and investor tier benefits.')}
+      ${step(2, 'View your portfolio and property details.')}
       ${step(3, 'Upload documents and access resources when your advisor requests them.')}
     </table>
   </td></tr>

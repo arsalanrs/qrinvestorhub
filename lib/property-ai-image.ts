@@ -65,12 +65,15 @@ export async function generatePropertyHeroImage(
     return getPropertyHeroPublicUrl(supabase, existingPath);
   }
 
-  if (process.env.ENABLE_PROPERTY_AI_IMAGES !== 'true') {
-    return null;
-  }
-
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) return null;
+
+  const explicitlyDisabled = process.env.ENABLE_PROPERTY_AI_IMAGES === 'false';
+  const explicitlyEnabled = process.env.ENABLE_PROPERTY_AI_IMAGES === 'true';
+  const onProduction = process.env.VERCEL_ENV === 'production';
+  if (explicitlyDisabled || (!explicitlyEnabled && !onProduction)) {
+    return null;
+  }
 
   try {
     const OpenAI = (await import('openai')).default;
@@ -91,12 +94,12 @@ export async function generatePropertyHeroImage(
     await ensurePublicBucket(supabase);
 
     const buffer = Buffer.from(b64, 'base64');
-    const path = `${applicationId}/${propertyRowId}.webp`;
+    const path = `${applicationId}/${propertyRowId}.png`;
 
     const { error: uploadError } = await supabase.storage
       .from(PROPERTY_IMAGES_BUCKET)
       .upload(path, buffer, {
-        contentType: 'image/webp',
+        contentType: 'image/png',
         upsert: true,
       });
 

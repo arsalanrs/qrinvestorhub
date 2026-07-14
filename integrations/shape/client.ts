@@ -91,7 +91,11 @@ async function postShapeLead(postUrl: string, payload: Record<string, unknown>) 
   return { created: true, shape_lead_id: shapeLeadId, shape_response: shapeResponse };
 }
 
-async function updateShapeLeadFields(shapeLeadId: string, fields: Record<string, unknown>) {
+export async function postShapeLeadDirect(postUrl: string, payload: Record<string, unknown>) {
+  return postShapeLead(postUrl, payload);
+}
+
+export async function updateShapeLeadFields(shapeLeadId: string, fields: Record<string, unknown>) {
   const { apiKey } = getShapeSearchConfig();
   if (!apiKey) return { synced: false, error: 'Missing SHAPE_API_KEY' };
 

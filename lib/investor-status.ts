@@ -49,7 +49,7 @@ export function getInvestorTierInfo(experience?: ExperienceInfo | null): Investo
 
   return {
     tier: 'rookie',
-    label: 'ROOKIE',
+    label: 'Select Investor',
     dealsLast3Years: deals,
     nextTier: 'pro',
     nextTierLabel: 'PRO',
