@@ -39,25 +39,25 @@ export function CommercialReProgramStep() {
             <div>
               <label style={creLabelStyle}>Current monthly rental income</label>
               <Controller control={control} name="commercialRe.propertyIncome.monthlyRentalIncome" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
               <label style={creLabelStyle}>Current annual gross income</label>
               <Controller control={control} name="commercialRe.propertyIncome.annualGrossIncome" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
               <label style={creLabelStyle}>Current annual operating expenses</label>
               <Controller control={control} name="commercialRe.propertyIncome.annualOperatingExpenses" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
               <label style={creLabelStyle}>Current annual net operating income (NOI)</label>
               <Controller control={control} name="commercialRe.propertyIncome.annualNOI" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
@@ -162,13 +162,13 @@ export function CommercialReProgramStep() {
             <div>
               <label style={creLabelStyle}>Approx. annual business revenue</label>
               <Controller control={control} name="commercialRe.operatingBusiness.annualRevenue" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
               <label style={creLabelStyle}>Approx. annual net income</label>
               <Controller control={control} name="commercialRe.operatingBusiness.annualNetIncome" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
@@ -195,7 +195,7 @@ export function CommercialReProgramStep() {
             <div>
               <label style={creLabelStyle}>Current monthly rent</label>
               <Controller control={control} name="commercialRe.operatingBusiness.currentMonthlyRent" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
@@ -243,13 +243,13 @@ export function CommercialReProgramStep() {
             <div>
               <label style={creLabelStyle}>Total down payment available</label>
               <Controller control={control} name="commercialRe.purchaseDetails.totalDownPayment" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
               <label style={creLabelStyle}>Earnest money deposited</label>
               <Controller control={control} name="commercialRe.purchaseDetails.earnestMoneyDeposited" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
@@ -291,7 +291,7 @@ export function CommercialReProgramStep() {
             <div>
               <label style={creLabelStyle}>Estimated renovation budget</label>
               <Controller control={control} name="commercialRe.purchaseDetails.renovationBudget" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
@@ -323,7 +323,7 @@ export function CommercialReProgramStep() {
             <div>
               <label style={creLabelStyle}>Current mortgage balance</label>
               <Controller control={control} name="commercialRe.existingLoan.currentBalance" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
@@ -333,13 +333,13 @@ export function CommercialReProgramStep() {
             <div>
               <label style={creLabelStyle}>Current monthly payment</label>
               <Controller control={control} name="commercialRe.existingLoan.currentMonthlyPayment" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
               <label style={creLabelStyle}>Original loan amount</label>
               <Controller control={control} name="commercialRe.existingLoan.originalLoanAmount" render={({ field }) => (
-                <CurrencyInput value={field.value} onChange={field.onChange} />
+                <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
               )} />
             </div>
             <div>
@@ -384,7 +384,7 @@ export function CommercialReProgramStep() {
                 <div>
                   <label style={creLabelStyle}>Requested cash-out amount</label>
                   <Controller control={control} name="commercialRe.cashOut.requestedAmount" render={({ field }) => (
-                    <CurrencyInput value={field.value} onChange={field.onChange} />
+                    <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
                   )} />
                 </div>
                 <div>

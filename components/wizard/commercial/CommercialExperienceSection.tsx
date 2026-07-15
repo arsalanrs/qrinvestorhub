@@ -79,25 +79,25 @@ export function CommercialExperienceSection() {
           <div>
             <label style={creLabelStyle}>Approximate personal net worth</label>
             <Controller control={control} name="commercialRe.financialProfile.personalNetWorth" render={({ field }) => (
-              <CurrencyInput value={field.value} onChange={field.onChange} />
+              <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
             )} />
           </div>
           <div>
             <label style={creLabelStyle}>Approximate business liquidity</label>
             <Controller control={control} name="commercialRe.financialProfile.businessLiquidity" render={({ field }) => (
-              <CurrencyInput value={field.value} onChange={field.onChange} />
+              <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
             )} />
           </div>
           <div>
             <label style={creLabelStyle}>Funds available for closing</label>
             <Controller control={control} name="commercialRe.financialProfile.fundsForClosing" render={({ field }) => (
-              <CurrencyInput value={field.value} onChange={field.onChange} />
+              <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
             )} />
           </div>
           <div>
             <label style={creLabelStyle}>Liquidity remaining after closing</label>
             <Controller control={control} name="commercialRe.financialProfile.liquidityAfterClosing" render={({ field }) => (
-              <CurrencyInput value={field.value} onChange={field.onChange} />
+              <CurrencyInput value={field.value ?? ''} onChange={field.onChange} />
             )} />
           </div>
           <div>
