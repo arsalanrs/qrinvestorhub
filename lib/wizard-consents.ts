@@ -1,3 +1,5 @@
+import type { Consents } from '@/types/investor-application';
+
 export const INVESTOR_CONSENTS = [
   { name: 'accuracyConfirmed' as const, label: 'I confirm that all information provided is accurate and complete to the best of my knowledge.' },
   { name: 'investmentPurpose' as const, label: 'I confirm this loan is for investment purposes only (non-owner-occupied property).' },
@@ -15,7 +17,7 @@ export const COMMERCIAL_RE_CONSENTS = [
 ];
 
 export function allRequiredConsentsChecked(
-  consents: Record<string, boolean> | undefined,
+  consents: Partial<Consents> | undefined,
   program: string,
 ): boolean {
   const list = program === 'commercial_re' ? COMMERCIAL_RE_CONSENTS : INVESTOR_CONSENTS;
