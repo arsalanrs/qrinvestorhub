@@ -1,4 +1,4 @@
-export type ProgramKey = 'blanket_portfolio' | 'bridge' | 'construction' | 'dscr' | 'rehab';
+export type ProgramKey = 'blanket_portfolio' | 'bridge' | 'construction' | 'dscr' | 'rehab' | 'commercial_re';
 
 export interface ProgramConfig {
   key: ProgramKey;
@@ -65,6 +65,14 @@ export const PROGRAM_CONFIGS: Record<ProgramKey, ProgramConfig> = {
     maxARV: 75,
     requiredFields: ['ARV', 'rehab budget', 'exit strategy'],
     steps: ['Purpose', 'Borrower', 'Experience', 'Property', 'Rehab Budget', 'Exit Strategy', 'Documents', 'Review'],
+  },
+  commercial_re: {
+    key: 'commercial_re',
+    label: 'Commercial Real Estate Loan',
+    shortLabel: 'Commercial RE',
+    description: 'Financing for income-producing or owner-occupied commercial property — multifamily, office, retail, industrial, and more.',
+    requiredFields: ['property type', 'property use', 'loan purpose', 'property or business financials'],
+    steps: ['Purpose', 'Borrower', 'Experience', 'Property', 'Loan Structure', 'Commercial Details', 'Documents', 'Review'],
   },
 };
 

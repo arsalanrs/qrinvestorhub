@@ -7,6 +7,8 @@ import { DictationTextarea } from '@/components/ui/DictationTextarea';
 import { LoanLedger } from '@/components/wizard/LoanLedger';
 import { PROGRAM_CONFIGS } from '@/config/loan-programs';
 import type { ProgramKey } from '@/config/loan-programs';
+import { commercialPropertyTypeLabel } from '@/lib/commercial-re-labels';
+import { COMMERCIAL_PROPERTY_USES } from '@/config/commercial-re-options';
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
@@ -34,20 +36,12 @@ function SummaryBlock({ title, rows }: { title: string; rows: Array<{ label: str
   );
 }
 
-const CONSENTS = [
-  { name: 'accuracyConfirmed' as const, label: 'I confirm that all information provided is accurate and complete to the best of my knowledge.' },
-  { name: 'investmentPurpose' as const, label: 'I confirm this loan is for investment purposes only (non-owner-occupied property).' },
-  { name: 'noOwnerOccupancy' as const, label: 'I understand that owner-occupancy of the subject property is not permitted under this loan program.' },
-  { name: 'contactConsent' as const, label: 'I consent to being contacted by QuestRock or its lending partners via phone, email, or SMS regarding this application.' },
-  { name: 'electronicComms' as const, label: 'I agree to receive electronic communications and disclosures related to this loan application.' },
-  { name: 'creditPullConsent' as const, label: 'I agree to have my credit pulled as part of this loan application.' },
-];
+import { INVESTOR_CONSENTS, COMMERCIAL_RE_CONSENTS, allRequiredConsentsChecked } from '@/lib/wizard-consents';
 
 export function ReviewSubmitStep() {
   const { control, watch } = useFormContext<InvestorApplication>();
   const formValues = useWatch({ control }) as InvestorApplication;
   const consents = watch('consents');
-  const allConsented = consents && Object.values(consents).every(Boolean);
 
   const program = formValues.loanProgram;
   const programLabel = program ? (PROGRAM_CONFIGS[program as ProgramKey]?.label || program) : 'Not selected';
@@ -55,6 +49,10 @@ export function ReviewSubmitStep() {
   const e = formValues.entity;
   const lr = formValues.loanRequest;
   const prop = formValues.properties?.[0];
+  const cre = formValues.commercialRe;
+  const isCommercial = program === 'commercial_re';
+  const consentList = isCommercial ? COMMERCIAL_RE_CONSENTS : INVESTOR_CONSENTS;
+  const allConsented = allRequiredConsentsChecked(consents, program || '');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -93,6 +91,21 @@ export function ReviewSubmitStep() {
           { label: 'Funding Timeline', value: lr?.fundingTimeline?.replace(/_/g, ' ') || '' },
           { label: 'Exit Strategy', value: lr?.exitStrategy || '' },
         ]} />
+
+        {isCommercial && cre && (
+          <SummaryBlock title="Commercial Property" rows={[
+            { label: 'Property type', value: commercialPropertyTypeLabel(cre.commercialPropertyType) },
+            { label: 'Property use', value: COMMERCIAL_PROPERTY_USES.find(u => u.value === cre.propertyUse)?.label || '' },
+            { label: 'Stabilized', value: cre.isStabilized === true ? 'Yes' : cre.isStabilized === false ? 'No' : '' },
+            { label: 'Annual NOI', value: cre.propertyIncome?.annualNOI || '' },
+          ]} />
+        )}
+
+        {cre?.dealStory && (
+          <SummaryBlock title="Deal opportunity" rows={[
+            { label: 'Summary', value: cre.dealStory },
+          ]} />
+        )}
 
         {prop && (
           <SummaryBlock title="Primary Property" rows={[
@@ -164,7 +177,7 @@ export function ReviewSubmitStep() {
       {/* Consents */}
       <WizardCard title="Authorization & Consents" subtitle="Please read and check each box below to complete your application.">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {CONSENTS.map(({ name, label }) => (
+          {consentList.map(({ name, label }) => (
             <Controller
               key={name}
               control={control}

@@ -1,16 +1,22 @@
+import type { CommercialReInfo } from '@/types/commercial-re';
+
+export type { CommercialReInfo };
+
 export type LoanProgram =
   | 'blanket_portfolio'
   | 'bridge'
   | 'construction'
   | 'dscr'
-  | 'rehab';
+  | 'rehab'
+  | 'commercial_re';
 
 export type DealStage =
   | 'general_info'
   | 'actively_looking'
   | 'identified_property'
   | 'under_contract'
-  | 'own_property';
+  | 'own_property'
+  | 'loan_maturity_balloon';
 
 export type TransactionType =
   | 'purchase'
@@ -18,7 +24,9 @@ export type TransactionType =
   | 'cash_out_refi'
   | 'rate_term_refi'
   | 'delayed_purchase'
-  | 'line_of_credit';
+  | 'line_of_credit'
+  | 'maturing_balloon_refi'
+  | 'construction_to_permanent';
 
 export type PropertyType =
   | 'single_family'
@@ -213,6 +221,7 @@ export interface InvestorApplication {
   constructionGoal?: ConstructionGoal;
   dscrGoal?: DSCRGoal;
   rehabGoal?: RehabGoal;
+  commercialRe?: CommercialReInfo;
   documents: DocumentItem[];
   additionalNotes: string;
   consents: Consents;

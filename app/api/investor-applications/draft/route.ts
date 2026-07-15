@@ -23,7 +23,9 @@ export async function POST(req: NextRequest) {
       experience: body.experience,
       liquidity: body.liquidity,
       loan_request: body.loanRequest,
-      additional_notes: body.additionalNotes,
+      commercial_re: body.commercialRe || null,
+      additional_notes: body.additionalNotes
+        || (body.commercialRe?.dealStory ? `[Commercial opportunity]\n${body.commercialRe.dealStory}` : ''),
       consents: body.consents,
     };
 

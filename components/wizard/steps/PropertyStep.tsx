@@ -5,6 +5,7 @@ import type { InvestorApplication, PropertyData } from '@/types/investor-applica
 import { WizardCard } from '@/components/ui/WizardCard';
 import { PropertyCard } from '@/components/ui/PropertyCard';
 import { PortfolioBuilder } from '@/components/ui/PortfolioBuilder';
+import { CommercialPropertyCard } from '@/components/wizard/commercial/CommercialPropertyCard';
 
 function blankProperty(): PropertyData {
   return {
@@ -23,6 +24,17 @@ export function PropertyStep() {
   const { watch, control } = useFormContext<InvestorApplication>();
   const { fields, append, remove } = useFieldArray({ control, name: 'properties' });
   const program = watch('loanProgram');
+
+  if (program === 'commercial_re') {
+    return (
+      <WizardCard
+        title="Commercial Property"
+        subtitle="Subject property details for your commercial real estate loan request."
+      >
+        <CommercialPropertyCard />
+      </WizardCard>
+    );
+  }
 
   if (program === 'blanket_portfolio') {
     return (

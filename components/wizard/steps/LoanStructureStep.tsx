@@ -29,10 +29,12 @@ const labelStyle: React.CSSProperties = {
 const ALL_TRANSACTION_TYPES = [
   { value: 'purchase', label: 'Purchase', programs: ['all'] },
   { value: 'cash_out_refi', label: 'Cash-Out Refi', programs: ['all'] },
-  { value: 'rate_term_refi', label: 'Rate & Term Refi', programs: ['dscr', 'blanket_portfolio'] },
+  { value: 'rate_term_refi', label: 'Rate & Term Refi', programs: ['dscr', 'blanket_portfolio', 'commercial_re'] },
   { value: 'delayed_purchase', label: 'Delayed Purchase Refi', programs: ['dscr'] },
   { value: 'line_of_credit', label: 'Line of Credit', programs: ['blanket_portfolio'] },
   { value: 'refinance', label: 'Refinance', programs: ['bridge'] },
+  { value: 'maturing_balloon_refi', label: 'Maturing Balloon Refinance', programs: ['commercial_re'] },
+  { value: 'construction_to_permanent', label: 'Construction-to-Permanent', programs: ['commercial_re'] },
 ];
 
 export function LoanStructureStep() {

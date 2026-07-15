@@ -1,0 +1,122 @@
+import type { CommercialReInfo } from '@/types/commercial-re';
+
+export function defaultCommercialRe(): CommercialReInfo {
+  return {
+    commercialPropertyType: '',
+    commercialPropertyTypeOther: '',
+    propertyUse: '',
+    yearBuilt: '',
+    totalSqft: '',
+    lotSizeAcres: '',
+    numBuildings: '',
+    numUnitsOrSpaces: '',
+    occupancyPct: '',
+    isOperating: null,
+    isStabilized: null,
+    propertyIncome: {
+      monthlyRentalIncome: '',
+      annualGrossIncome: '',
+      annualOperatingExpenses: '',
+      annualNOI: '',
+      occupiedUnits: '',
+      vacantUnits: '',
+      rentsAtMarket: null,
+      tenantsDelinquent: null,
+      majorLeasesExpiring12mo: null,
+    },
+    leaseInfo: {
+      hasRentRoll: null,
+      writtenLeasesInPlace: null,
+      avgRemainingLeaseTerm: '',
+      largestTenantName: '',
+      largestTenantIncomePct: '',
+      tenantRelatedToBorrower: null,
+    },
+    propertyDocumentsAvailable: [],
+    operatingBusiness: {
+      legalName: '',
+      businessType: '',
+      businessAddress: '',
+      yearsInBusiness: '',
+      occupancyPct: '',
+      numEmployees: '',
+      annualRevenue: '',
+      annualNetIncome: '',
+      isProfitable: null,
+      revenueTrend: '',
+      paysRentCurrently: null,
+      currentMonthlyRent: '',
+      continueDuringMoveOrReno: null,
+    },
+    businessOwnership: {
+      ownershipPct: '',
+      owners20Plus: '',
+      allOwnersGuarantee: null,
+      ownersUnwillingGuarantee: null,
+    },
+    businessDocumentsAvailable: [],
+    purchaseDetails: {
+      totalDownPayment: '',
+      earnestMoneyDeposited: '',
+      contractExpiration: '',
+      dueDiligenceExpiration: '',
+      sellerFinancing: null,
+      armLengthTransaction: null,
+      purchasingRealEstateOnly: null,
+      renovationsRequiredAfterClosing: null,
+      renovationBudget: '',
+      downPaymentSource: '',
+      downPaymentSourceOther: '',
+    },
+    existingLoan: {
+      currentLender: '',
+      currentBalance: '',
+      currentRate: '',
+      currentMonthlyPayment: '',
+      originalLoanAmount: '',
+      maturityDate: '',
+      balloonDueDate: '',
+      prepaymentPenalty: null,
+      everLate: null,
+      currentlyInDefault: null,
+      lenderRequiringRefi: null,
+    },
+    cashOut: {
+      requestedAmount: '',
+      purpose: '',
+      purposeOther: '',
+    },
+    financialProfile: {
+      personalNetWorth: '',
+      businessLiquidity: '',
+      fundsForClosing: '',
+      liquidityAfterClosing: '',
+      otherCreOwned: null,
+      businessLoansOutstanding: null,
+      sbaLoansOutstanding: null,
+      taxLiensOrPaymentPlans: null,
+      adverseHistory: null,
+      adverseHistoryDetails: '',
+    },
+    commercialExperience: {
+      currentlyOwnsCre: null,
+      numPropertiesOwned: '',
+      previouslyOwnedThisType: null,
+      yearsOwnershipExperience: '',
+      selfManage: null,
+      thirdPartyManager: null,
+      completedRenovationsOrConstruction: null,
+      licensedContractorDeveloperManager: null,
+      priorForeclosureOrTransfer: null,
+    },
+    dealStory: '',
+  };
+}
+
+export function isIncomeProducingCommercialUse(use: string): boolean {
+  return use === 'leased_tenants' || use === 'partial_owner_lease';
+}
+
+export function isOwnerOccupiedCommercialUse(use: string): boolean {
+  return use === 'owner_occupied' || use === 'partial_owner_lease';
+}

@@ -18,4 +18,5 @@ export const SHAPE_STATUS_MAP: Record<string, string> = {
   construction: 'Construction Loan Submitted',
   dscr: 'DSCR Loan Submitted',
   rehab: 'Rehab Loan Submitted',
+  commercial_re: 'Commercial RE Loan Submitted',
 };

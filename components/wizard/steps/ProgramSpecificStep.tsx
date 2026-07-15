@@ -6,6 +6,7 @@ import { WizardCard } from '@/components/ui/WizardCard';
 import { RhfDictationInput } from '@/components/ui/RhfDictationInput';
 import { YesNoToggle } from '@/components/ui/YesNoToggle';
 import { fmt, toNum } from '@/lib/loan-calculations';
+import { CommercialReProgramStep } from '@/components/wizard/commercial/CommercialReProgramStep';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -369,6 +370,7 @@ export function ProgramSpecificStep() {
     case 'construction': return <ConstructionStep />;
     case 'bridge': return <BridgeStep />;
     case 'blanket_portfolio': return <BlanketPortfolioStep />;
+    case 'commercial_re': return <CommercialReProgramStep />;
     default:
       return (
         <WizardCard title="Program Details" subtitle="Select a loan program to continue.">

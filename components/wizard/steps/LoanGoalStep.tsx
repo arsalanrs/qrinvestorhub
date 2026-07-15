@@ -3,6 +3,7 @@
 import { useFormContext, Controller } from 'react-hook-form';
 import type { InvestorApplication, LoanProgram, DealStage } from '@/types/investor-application';
 import { PROGRAM_LIST } from '@/config/loan-programs';
+import { COMMERCIAL_PROPERTY_TYPES, COMMERCIAL_PROPERTY_USES } from '@/config/commercial-re-options';
 import { ChoiceCard } from '@/components/ui/ChoiceCard';
 import { WizardCard } from '@/components/ui/WizardCard';
 
@@ -12,14 +13,21 @@ const PROGRAM_BADGES: Record<string, string> = {
   construction: 'Up to 90% LTC',
   dscr: 'No income docs',
   rehab: 'Up to 90% LTC',
+  commercial_re: 'Owner-occ & income-producing',
 };
 
-const DEAL_STAGES: { value: DealStage; label: string; description: string }[] = [
+const DEAL_STAGES: { value: DealStage; label: string; description: string; commercialOnly?: boolean }[] = [
   { value: 'general_info', label: 'Just exploring', description: 'Looking for general loan information and rates.' },
   { value: 'actively_looking', label: 'Actively looking', description: 'Searching for a property but nothing identified yet.' },
   { value: 'identified_property', label: 'Property identified', description: 'Found a target property but not under contract.' },
   { value: 'under_contract', label: 'Under contract', description: 'Have a signed purchase agreement.' },
   { value: 'own_property', label: 'Already own the property', description: 'Refinancing or pulling equity from owned property.' },
+  {
+    value: 'loan_maturity_balloon',
+    label: 'Existing loan approaching maturity or balloon',
+    description: 'Maturity or balloon payment creates urgency — common on commercial loans.',
+    commercialOnly: true,
+  },
 ];
 
 const inputStyle = {
@@ -72,7 +80,7 @@ export function LoanGoalStep() {
             name="dealStage"
             render={({ field }) => (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px' }}>
-                {DEAL_STAGES.map(s => (
+                {DEAL_STAGES.filter(s => !s.commercialOnly || selectedProgram === 'commercial_re').map(s => (
                   <ChoiceCard
                     key={s.value}
                     title={s.label}
@@ -220,6 +228,75 @@ export function LoanGoalStep() {
               </div>
             </div>
           </div>
+        )}
+
+        {selectedProgram === 'commercial_re' && (
+          <>
+            <div style={{ borderTop: '1px solid var(--line)', paddingTop: '24px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', margin: '0 0 14px' }}>
+                Commercial Property Type
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--slate)', margin: '0 0 14px' }}>
+                What type of commercial property are you financing?
+              </p>
+              <Controller
+                control={control}
+                name="commercialRe.commercialPropertyType"
+                render={({ field }) => (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                    {COMMERCIAL_PROPERTY_TYPES.map(t => (
+                      <ChoiceCard
+                        key={t.value}
+                        title={t.label}
+                        selected={field.value === t.value}
+                        onClick={() => field.onChange(t.value)}
+                        compact
+                      />
+                    ))}
+                  </div>
+                )}
+              />
+              {watch('commercialRe.commercialPropertyType') === 'other' && (
+                <div style={{ marginTop: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: 'var(--ink)' }}>
+                    Please describe the property and its intended use
+                  </label>
+                  <textarea
+                    {...register('commercialRe.commercialPropertyTypeOther')}
+                    rows={3}
+                    style={{ ...inputStyle, resize: 'vertical' }}
+                    placeholder="Describe the special-purpose or unique property..."
+                  />
+                </div>
+              )}
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--line)', paddingTop: '24px', marginTop: '24px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--ink)', margin: '0 0 14px' }}>
+                Property Use
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--slate)', margin: '0 0 14px' }}>
+                How will the property be used? This determines whether we evaluate business income, rental income, or both.
+              </p>
+              <Controller
+                control={control}
+                name="commercialRe.propertyUse"
+                render={({ field }) => (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {COMMERCIAL_PROPERTY_USES.map(u => (
+                      <ChoiceCard
+                        key={u.value}
+                        title={u.label}
+                        description={u.description || undefined}
+                        selected={field.value === u.value}
+                        onClick={() => field.onChange(u.value)}
+                      />
+                    ))}
+                  </div>
+                )}
+              />
+            </div>
+          </>
         )}
 
         {(selectedStage && !selectedProgram) && (

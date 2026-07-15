@@ -6,6 +6,7 @@ import { WizardCard } from '@/components/ui/WizardCard';
 import { DictationTextarea } from '@/components/ui/DictationTextarea';
 import { YesNoToggle } from '@/components/ui/YesNoToggle';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
+import { CommercialExperienceSection } from '@/components/wizard/commercial/CommercialExperienceSection';
 import { toNum, fmt } from '@/lib/loan-calculations';
 
 const inputStyle: React.CSSProperties = {
@@ -28,19 +29,91 @@ const labelStyle: React.CSSProperties = {
   marginBottom: '6px',
 };
 
+function LiquidityTable({ totalLiquid }: { totalLiquid: number }) {
+  const { control } = useFormContext<InvestorApplication>();
+
+  return (
+    <div style={{ marginBottom: '20px' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1.5fr 1fr',
+        gap: '12px',
+        padding: '10px 12px',
+        background: 'var(--paper-dim)',
+        borderRadius: '2px',
+        marginBottom: '8px',
+      }}>
+        <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--slate)' }}>Asset Type</span>
+        <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--slate)' }}>Estimated Balance</span>
+      </div>
+
+      {[
+        { index: 0, label: 'Checking / Savings' },
+        { index: 1, label: 'Retirement (401k, IRA)' },
+        { index: 2, label: 'Stocks / Brokerage' },
+        { index: 3, label: 'Other Assets' },
+      ].map(({ index, label }) => (
+        <div key={index} style={{
+          display: 'grid',
+          gridTemplateColumns: '1.5fr 1fr',
+          gap: '12px',
+          padding: '8px 12px',
+          borderBottom: '1px solid var(--line)',
+          alignItems: 'center',
+        }}>
+          <span style={{ fontSize: '14px', color: 'var(--ink-soft)', fontFamily: 'Inter, sans-serif' }}>{label}</span>
+          <Controller
+            control={control}
+            name={`liquidity.${index}.estimatedBalance`}
+            render={({ field }) => (
+              <CurrencyInput value={field.value} onChange={field.onChange} placeholder="0" />
+            )}
+          />
+        </div>
+      ))}
+
+      <div style={{
+        display: 'flex',
+        justifyContent: 'flex-end',
+        padding: '12px',
+        background: 'var(--ledger-green-soft)',
+        borderRadius: '2px',
+        marginTop: '8px',
+      }}>
+        <span style={{ fontSize: '14px', fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', color: 'var(--ledger-green)' }}>
+          Total Liquid Assets: {fmt(totalLiquid)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function ExperienceLiquidityStep() {
   const { register, control, watch } = useFormContext<InvestorApplication>();
+  const program = watch('loanProgram');
   const experience = watch('experience');
   const liquidity = useWatch({ control, name: 'liquidity' }) as InvestorApplication['liquidity'];
 
-  const totalLiquid = (liquidity || []).reduce((sum, a) => sum + toNum(a.estimatedBalance ?? (a as { estimatedValue?: string }).estimatedValue), 0);
+  const totalLiquid = (liquidity || []).reduce(
+    (sum, a) => sum + toNum(a.estimatedBalance ?? (a as { estimatedValue?: string }).estimatedValue),
+    0,
+  );
+
+  if (program === 'commercial_re') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <CommercialExperienceSection />
+        <WizardCard title="Liquidity & Assets" subtitle="Liquid assets and reserves help us size your commercial loan and closing requirements.">
+          <LiquidityTable totalLiquid={totalLiquid} />
+        </WizardCard>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Experience */}
       <WizardCard title="Investment Experience" subtitle="Help us understand your real estate investing background. Experience can improve your loan terms.">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Fix & Flips */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'start' }}>
             <div>
               <Controller
@@ -59,7 +132,6 @@ export function ExperienceLiquidityStep() {
             )}
           </div>
 
-          {/* Rentals */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'start' }}>
             <Controller
               control={control}
@@ -76,7 +148,6 @@ export function ExperienceLiquidityStep() {
             )}
           </div>
 
-          {/* New Builds */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'start' }}>
             <Controller
               control={control}
@@ -93,7 +164,6 @@ export function ExperienceLiquidityStep() {
             )}
           </div>
 
-          {/* Builder/Developer */}
           <Controller
             control={control}
             name="experience.isBuilderDeveloper"
@@ -102,7 +172,6 @@ export function ExperienceLiquidityStep() {
             )}
           />
 
-          {/* Adverse History */}
           <div>
             <Controller
               control={control}
@@ -134,61 +203,8 @@ export function ExperienceLiquidityStep() {
         </div>
       </WizardCard>
 
-      {/* Liquidity */}
       <WizardCard title="Liquidity & Assets" subtitle="We always ask for an account of your liquidity/assets. It is not always needed, but sometimes showing reserves can help with getting a better deal or overall qualification. Add your liquid assets below — this stays confidential.">
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1.5fr 1fr',
-            gap: '12px',
-            padding: '10px 12px',
-            background: 'var(--paper-dim)',
-            borderRadius: '2px',
-            marginBottom: '8px',
-          }}>
-            <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--slate)' }}>Asset Type</span>
-            <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--slate)' }}>Estimated Balance</span>
-          </div>
-
-          {[
-            { index: 0, label: 'Checking / Savings' },
-            { index: 1, label: 'Retirement (401k, IRA)' },
-            { index: 2, label: 'Stocks / Brokerage' },
-            { index: 3, label: 'Other Assets' },
-          ].map(({ index, label }) => (
-            <div key={index} style={{
-              display: 'grid',
-              gridTemplateColumns: '1.5fr 1fr',
-              gap: '12px',
-              padding: '8px 12px',
-              borderBottom: '1px solid var(--line)',
-              alignItems: 'center',
-            }}>
-              <span style={{ fontSize: '14px', color: 'var(--ink-soft)', fontFamily: 'Inter, sans-serif' }}>{label}</span>
-              <Controller
-                control={control}
-                name={`liquidity.${index}.estimatedBalance`}
-                render={({ field }) => (
-                  <CurrencyInput value={field.value} onChange={field.onChange} placeholder="0" />
-                )}
-              />
-            </div>
-          ))}
-
-          <div style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            padding: '12px',
-            background: 'var(--ledger-green-soft)',
-            borderRadius: '2px',
-            marginTop: '8px',
-          }}>
-            <span style={{ fontSize: '14px', fontWeight: 600, fontFamily: 'IBM Plex Mono, monospace', color: 'var(--ledger-green)' }}>
-              Total Liquid Assets: {fmt(totalLiquid)}
-            </span>
-          </div>
-        </div>
-
+        <LiquidityTable totalLiquid={totalLiquid} />
         <p style={{ fontSize: '12px', color: 'var(--slate-light)', margin: 0, lineHeight: '1.5' }}>
           💡 Tip: Lenders typically want to see 3–6 months of PITIA in reserves after closing.
         </p>

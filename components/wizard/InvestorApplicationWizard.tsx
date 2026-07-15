@@ -18,8 +18,9 @@ import { ProgramSpecificStep } from './steps/ProgramSpecificStep';
 import { DocumentUploadStep } from './steps/DocumentUploadStep';
 import { ReviewSubmitStep } from './steps/ReviewSubmitStep';
 import { SuccessScreen } from './SuccessScreen';
-import { WizardCard } from '@/components/ui/WizardCard';
 import { FlowButton } from '@/components/ui/flow-button';
+import { defaultCommercialRe } from '@/lib/default-commercial-re';
+import { allRequiredConsentsChecked } from '@/lib/wizard-consents';
 
 const WIZARD_STEPS = [
   { key: 'goal', label: 'Loan Goal', Component: LoanGoalStep },
@@ -87,6 +88,7 @@ function getDefaultValues(initialProgram?: string): InvestorApplication {
       accuracyConfirmed: false, investmentPurpose: false, noOwnerOccupancy: false,
       contactConsent: false, electronicComms: false, creditPullConsent: false,
     },
+    commercialRe: defaultCommercialRe(),
   };
 }
 
@@ -221,7 +223,7 @@ export function InvestorApplicationWizard({ initialProgram }: Props) {
   const { Component: StepComponent } = WIZARD_STEPS[currentStep];
   const isLastStep = currentStep === WIZARD_STEPS.length - 1;
   const consents = formValues.consents;
-  const allConsented = consents && Object.values(consents).every(Boolean);
+  const allConsented = allRequiredConsentsChecked(consents, program || '');
 
   return (
     <FormProvider {...methods}>
