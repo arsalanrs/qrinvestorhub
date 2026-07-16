@@ -119,6 +119,7 @@ export function InvestorApplicationWizard({ initialProgram, initialLo }: Props) 
   const [successData, setSuccessData] = useState<SuccessData | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const apiSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const apiSaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const methods = useForm<InvestorApplication>({
     defaultValues: getDefaultValues(initialProgram, initialLo),
@@ -129,6 +130,31 @@ export function InvestorApplicationWizard({ initialProgram, initialLo }: Props) 
   const formValues = useWatch({ control: methods.control }) as InvestorApplication;
   const program = formValues.loanProgram;
   const programConfig = program ? PROGRAM_CONFIGS[program as ProgramKey] : null;
+
+  const persistDraftId = useCallback((applicationId: string) => {
+    setValue('id', applicationId);
+    try {
+      const data = getValues();
+      localStorage.setItem('qr-investor-draft', JSON.stringify({ ...data, id: applicationId }));
+    } catch {}
+  }, [getValues, setValue]);
+
+  const saveDraftToAPI = useCallback(async () => {
+    try {
+      const data = getValues();
+      if (!data.borrower.email?.trim()) return;
+      const res = await fetch('/api/investor-applications/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) return;
+      const result = await res.json() as { applicationId?: string };
+      if (result.applicationId && result.applicationId !== data.id) {
+        persistDraftId(result.applicationId);
+      }
+    } catch {}
+  }, [getValues, persistDraftId]);
 
   // Load draft from localStorage on mount
   useEffect(() => {
@@ -161,18 +187,16 @@ export function InvestorApplicationWizard({ initialProgram, initialLo }: Props) 
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   }, [formValues, getValues]);
 
-  // API save every 30 seconds
-  const saveDraftToAPI = useCallback(async () => {
-    try {
-      const data = getValues();
-      if (!data.borrower.email) return;
-      await fetch('/api/investor-applications/draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-    } catch {}
-  }, [getValues]);
+  useEffect(() => {
+    if (!formValues.borrower?.email?.trim()) return;
+    if (apiSaveDebounceRef.current) clearTimeout(apiSaveDebounceRef.current);
+    apiSaveDebounceRef.current = setTimeout(() => {
+      void saveDraftToAPI();
+    }, 5000);
+    return () => {
+      if (apiSaveDebounceRef.current) clearTimeout(apiSaveDebounceRef.current);
+    };
+  }, [formValues, saveDraftToAPI]);
 
   useEffect(() => {
     apiSaveTimerRef.current = setInterval(saveDraftToAPI, 30000);
