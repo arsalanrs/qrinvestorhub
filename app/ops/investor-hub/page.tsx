@@ -46,6 +46,15 @@ interface ShapeLoOption {
   applyUrl?: string;
 }
 
+interface UploadedDocument {
+  id: string;
+  label: string;
+  documentType: string | null;
+  fileName: string | null;
+  uploadedAt: string;
+  openUrl: string;
+}
+
 function borrowerName(app: AdminApplication) {
   return `${app.borrower?.firstName || ''} ${app.borrower?.lastName || ''}`.trim() || 'Unknown';
 }
@@ -80,6 +89,8 @@ export default function InvestorHubAdminPage() {
   const [actionBusy, setActionBusy] = useState('');
   const [actionMessage, setActionMessage] = useState('');
   const [loCopyHint, setLoCopyHint] = useState('');
+  const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -142,6 +153,19 @@ export default function InvestorHubAdminPage() {
     }
     return res;
   };
+
+  useEffect(() => {
+    if (!staffSession || !selected) {
+      setUploadedDocs([]);
+      return;
+    }
+    setDocsLoading(true);
+    adminFetch(`/api/admin/investor-applications/${selected.id}/documents`)
+      .then(res => res.json())
+      .then(json => setUploadedDocs(json.documents || []))
+      .catch(() => setUploadedDocs([]))
+      .finally(() => setDocsLoading(false));
+  }, [selected?.id, staffSession]);
 
   const runShapeAction = async (
     action: 'create' | 'sync' | 'delete' | 'assign',
@@ -583,6 +607,33 @@ export default function InvestorHubAdminPage() {
                 </div>
               )}
 
+              <div className="admin-panel admin-panel-docs">
+                <h3>Uploaded documents</h3>
+                {docsLoading ? (
+                  <p>Loading files…</p>
+                ) : uploadedDocs.length === 0 ? (
+                  <p>No files uploaded with this application.</p>
+                ) : (
+                  <ul className="admin-doc-list">
+                    {uploadedDocs.map(doc => (
+                      <li key={doc.id}>
+                        <a
+                          href={doc.openUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="admin-doc-link"
+                        >
+                          {doc.fileName || doc.label}
+                        </a>
+                        {doc.documentType && (
+                          <span className="admin-doc-type">{doc.documentType.replace(/_/g, ' ')}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
               {selected.additional_notes && (
                 <div className="admin-panel">
                   <h3>Additional notes</h3>
@@ -961,6 +1012,39 @@ export default function InvestorHubAdminPage() {
         }
         .admin-panel-info h3 {
           color: #1d4ed8;
+        }
+        .admin-panel-docs {
+          background: #f8fafc;
+        }
+        .admin-doc-list {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+        .admin-doc-list li {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: baseline;
+          gap: 8px;
+          padding: 8px 0;
+          border-bottom: 1px solid var(--line);
+        }
+        .admin-doc-list li:last-child {
+          border-bottom: none;
+        }
+        .admin-doc-link {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--blue);
+          text-decoration: none;
+        }
+        .admin-doc-link:hover {
+          text-decoration: underline;
+        }
+        .admin-doc-type {
+          font-size: 11px;
+          color: var(--slate);
+          text-transform: capitalize;
         }
         .admin-link {
           display: inline-block;
