@@ -32,7 +32,6 @@ export const DEFAULT_SHAPE_LO_ROSTER: ShapeLoRosterEntry[] = [
   { name: 'Tyler Johnson', depursLo: 34, email: 'tjohnson@questrock.com' },
   { name: 'Bastian Johnston', depursLo: 13, email: 'bastianjohnston@questrock.com' },
   { name: 'Nikk Smith', depursLo: 3, email: 'nikksmith@questrock.com' },
-  { name: 'Jessica Sherard', depursLo: 37, email: 'jsherard@questrock.com' },
   { name: 'Ray Conway', depursLo: 16, email: 'rconway@questrock.com' },
   { name: 'Gregory Bethea Jr', depursLo: 58, email: 'gbethea@questrock.com' },
   { name: 'Zachary Davis', depursLo: 55, email: 'zdavis@questrock.com' },
