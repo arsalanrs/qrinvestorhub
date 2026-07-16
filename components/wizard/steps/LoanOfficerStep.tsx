@@ -50,7 +50,7 @@ export function LoanOfficerStep({ prefilledLo }: Props) {
   return (
     <WizardCard
       title="Are you working with a loan officer?"
-      subtitle="If a QuestRock loan officer referred you, select their name so we can route your application correctly."
+      subtitle="If a loan officer referred you, select their name so we can route your application correctly."
     >
       <div style={{ marginBottom: '20px' }}>
         <Controller
