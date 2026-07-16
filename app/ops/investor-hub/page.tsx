@@ -5,11 +5,15 @@ import { PROGRAM_CONFIGS } from '@/config/loan-programs';
 import type { ProgramKey } from '@/config/loan-programs';
 import { fmt, toNum } from '@/lib/loan-calculations';
 
-const STORAGE_KEY = 'qr-investor-admin-auth';
+const HUB_OPS_LAUNCH =
+  process.env.NEXT_PUBLIC_INTELLIGENCE_HUB_OPS_URL
+  ?? 'https://questrockintelligencehub.vercel.app/api/launch?appId=investor-hub-ops';
 
-interface AdminSession {
+interface StaffSession {
   email: string;
-  password: string;
+  fullName: string | null;
+  role: string;
+  canViewAll: boolean;
 }
 
 interface AdminApplication {
@@ -58,9 +62,8 @@ function statusTone(status: string) {
 }
 
 export default function InvestorHubAdminPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [session, setSession] = useState<AdminSession | null>(null);
+  const [staffSession, setStaffSession] = useState<StaffSession | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState('');
   const [applications, setApplications] = useState<AdminApplication[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,34 +82,27 @@ export default function InvestorHubAdminPage() {
   const [loCopyHint, setLoCopyHint] = useState('');
 
   useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as AdminSession;
-        if (parsed.email && parsed.password) {
-          setSession(parsed);
-          setEmail(parsed.email);
-          setPassword(parsed.password);
-        }
-      }
-    } catch {
-      sessionStorage.removeItem(STORAGE_KEY);
-    }
+    const params = new URLSearchParams(window.location.search);
+    const urlError = params.get('error');
+    if (urlError) setAuthError(urlError);
+
+    fetch('/api/admin/session', { credentials: 'same-origin' })
+      .then(res => {
+        if (!res.ok) throw new Error('Unauthorized');
+        return res.json();
+      })
+      .then(json => setStaffSession(json.user))
+      .catch(() => setStaffSession(null))
+      .finally(() => setAuthLoading(false));
   }, []);
 
-  const loadApplications = (activeSession: AdminSession) => {
+  const loadApplications = () => {
     setLoading(true);
     const qs = showArchived ? '?includeArchived=1' : '';
-    fetch(`/api/admin/investor-applications${qs}`, {
-      headers: {
-        'x-admin-email': activeSession.email,
-        'x-admin-password': activeSession.password,
-      },
-    })
+    fetch(`/api/admin/investor-applications${qs}`, { credentials: 'same-origin' })
       .then(res => {
         if (res.status === 401) {
-          sessionStorage.removeItem(STORAGE_KEY);
-          setSession(null);
+          setStaffSession(null);
           throw new Error('Session expired');
         }
         return res.json();
@@ -121,8 +117,8 @@ export default function InvestorHubAdminPage() {
   };
 
   useEffect(() => {
-    if (session) loadApplications(session);
-  }, [session, showArchived]);
+    if (staffSession) loadApplications();
+  }, [staffSession, showArchived]);
 
   useEffect(() => {
     fetch('/api/admin/shape-roster')
@@ -131,19 +127,17 @@ export default function InvestorHubAdminPage() {
       .catch(() => {});
   }, []);
 
-  const adminFetch = async (activeSession: AdminSession, path: string, init?: RequestInit) => {
+  const adminFetch = async (path: string, init?: RequestInit) => {
     const res = await fetch(path, {
       ...init,
+      credentials: 'same-origin',
       headers: {
         ...(init?.headers || {}),
-        'x-admin-email': activeSession.email,
-        'x-admin-password': activeSession.password,
         'Content-Type': 'application/json',
       },
     });
     if (res.status === 401) {
-      sessionStorage.removeItem(STORAGE_KEY);
-      setSession(null);
+      setStaffSession(null);
       throw new Error('Session expired');
     }
     return res;
@@ -153,11 +147,11 @@ export default function InvestorHubAdminPage() {
     action: 'create' | 'sync' | 'delete' | 'assign',
     depursLo?: number,
   ) => {
-    if (!session || !selected) return;
+    if (!staffSession || !selected) return;
     setActionBusy(action);
     setActionMessage('');
     try {
-      const res = await adminFetch(session, `/api/admin/investor-applications/${selected.id}`, {
+      const res = await adminFetch(`/api/admin/investor-applications/${selected.id}`, {
         method: 'POST',
         body: JSON.stringify({ action, depursLo }),
       });
@@ -170,7 +164,7 @@ export default function InvestorHubAdminPage() {
             ? 'Shape lead marked removed'
             : `Shape lead ${json.shapeLeadId}`,
       );
-      loadApplications(session);
+      loadApplications();
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : 'Action failed');
     } finally {
@@ -179,18 +173,18 @@ export default function InvestorHubAdminPage() {
   };
 
   const toggleArchive = async (archived: boolean) => {
-    if (!session || !selected) return;
+    if (!staffSession || !selected) return;
     setActionBusy('archive');
     setActionMessage('');
     try {
-      const res = await adminFetch(session, `/api/admin/investor-applications/${selected.id}`, {
+      const res = await adminFetch(`/api/admin/investor-applications/${selected.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ archived }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Archive failed');
       setActionMessage(archived ? 'Application archived' : 'Application restored');
-      loadApplications(session);
+      loadApplications();
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : 'Archive failed');
     } finally {
@@ -199,7 +193,7 @@ export default function InvestorHubAdminPage() {
   };
 
   const openCustomerPortal = async () => {
-    if (!session || !selected) return;
+    if (!staffSession || !selected) return;
     if (!selected.borrower?.email) {
       setActionMessage('Borrower email is missing — cannot open portal');
       return;
@@ -207,7 +201,7 @@ export default function InvestorHubAdminPage() {
     setActionBusy('portal-link');
     setActionMessage('');
     try {
-      const res = await adminFetch(session, `/api/admin/investor-applications/${selected.id}`, {
+      const res = await adminFetch(`/api/admin/investor-applications/${selected.id}`, {
         method: 'POST',
         body: JSON.stringify({ action: 'portal-link' }),
       });
@@ -222,27 +216,9 @@ export default function InvestorHubAdminPage() {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    const res = await fetch('/api/admin/investor-applications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    if (res.ok) {
-      const nextSession = { email: email.trim(), password };
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(nextSession));
-      setSession(nextSession);
-    } else {
-      const json = await res.json();
-      setAuthError(json.error || 'Invalid email or password');
-    }
-  };
-
-  const signOut = () => {
-    sessionStorage.removeItem(STORAGE_KEY);
-    setSession(null);
+  const signOut = async () => {
+    await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+    setStaffSession(null);
     setSelected(null);
     setApplications([]);
   };
@@ -299,25 +275,12 @@ export default function InvestorHubAdminPage() {
     });
   }, [applications, search, statusFilter, programFilter, stateFilter, cityFilter, daysFilter]);
 
-  if (!session) {
+  if (authLoading) {
     return (
       <div className="admin-login">
-        <form onSubmit={handleLogin} className="admin-login-card">
-          <h1>QuestRock Ops</h1>
-          <p>Investor Hub — staff access only</p>
-          <label>
-            Email
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="username" required />
-          </label>
-          <label>
-            Password
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required />
-          </label>
-          {authError && <p className="admin-error">{authError}</p>}
-          <button type="submit" className="qr-btn qr-btn-green" style={{ width: '100%', marginTop: 8 }}>
-            Sign in
-          </button>
-        </form>
+        <div className="admin-login-card">
+          <p>Loading…</p>
+        </div>
         <style jsx global>{`
           .admin-login {
             min-height: 100vh;
@@ -335,6 +298,42 @@ export default function InvestorHubAdminPage() {
             max-width: 400px;
             box-shadow: var(--shadow-lg);
           }
+        `}</style>
+      </div>
+    );
+  }
+
+  if (!staffSession) {
+    return (
+      <div className="admin-login">
+        <div className="admin-login-card">
+          <h1>QuestRock Ops</h1>
+          <p>Investor Hub ops uses your Intelligence Hub login — no separate password.</p>
+          {authError && <p className="admin-error">{authError}</p>}
+          <a href={HUB_OPS_LAUNCH} className="qr-btn qr-btn-green hub-signin-btn">
+            Sign in via Intelligence Hub
+          </a>
+          <p className="admin-login-hint">
+            Executives and managers see all intakes. Loan officers see applications assigned to them.
+          </p>
+        </div>
+        <style jsx global>{`
+          .admin-login {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f172a;
+            padding: 24px;
+          }
+          .admin-login-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 36px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: var(--shadow-lg);
+          }
           .admin-login-card h1 {
             font-size: 22px;
             font-weight: 700;
@@ -344,10 +343,18 @@ export default function InvestorHubAdminPage() {
           .admin-login-card p {
             font-size: 13px;
             color: var(--slate);
-            margin: 0 0 24px;
+            margin: 0 0 16px;
           }
-          .admin-login-card label {
-            margin-bottom: 14px;
+          .admin-login-hint {
+            font-size: 12px !important;
+            margin-top: 14px !important;
+            margin-bottom: 0 !important;
+          }
+          .hub-signin-btn {
+            display: block;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
           }
           .admin-error {
             color: #b45309;
@@ -364,10 +371,10 @@ export default function InvestorHubAdminPage() {
       <header className="admin-topbar">
         <div>
           <h1>Investor Hub</h1>
-          <p>Operations dashboard · {session.email}</p>
+          <p>Operations dashboard · {staffSession.fullName || staffSession.email} · {staffSession.role}{staffSession.canViewAll ? ' · all intakes' : ' · your assigned intakes'}</p>
         </div>
         <div className="admin-topbar-actions">
-          <button type="button" className="qr-btn qr-btn-secondary" onClick={() => session && loadApplications(session)}>
+          <button type="button" className="qr-btn qr-btn-secondary" onClick={() => loadApplications()}>
             Refresh
           </button>
           <button type="button" className="qr-btn qr-btn-secondary" onClick={signOut}>
