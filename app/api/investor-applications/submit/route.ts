@@ -7,6 +7,7 @@ import { generateAISummary } from '@/lib/ai-summary';
 import { upsertShapeLead } from '@/integrations/shape/client';
 import { SHAPE_STATUS_MAP } from '@/integrations/shape/field-map';
 import { getSubmissionEmailRouting } from '@/lib/investor-submission-routing';
+import { assignedLoDepursLo, buildAssignedLoRecord } from '@/lib/assigned-lo';
 import { lookupCallTranscriptSummary } from '@/lib/call-transcript-lookup';
 import { buildShapeSubmissionNote } from '@/lib/shape-submission-note';
 import { buildZapierSubmissionPayload } from '@/lib/zapier/build-submission-payload';
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
 
     if (process.env.ENABLE_SHAPE_SYNC === 'true') {
       try {
+        const loDepursLo = assignedLoDepursLo(body);
         shapeResult = await upsertShapeLead({
           firstName: body.borrower.firstName,
           lastName: body.borrower.lastName,
@@ -61,6 +63,7 @@ export async function POST(req: NextRequest) {
           status: SHAPE_STATUS_MAP[body.loanProgram || ''] || 'Loan Submitted',
           source: 'Investor Hub',
           note: shapeNote,
+          ...(loDepursLo ? { depursLo: loDepursLo } : {}),
         });
         shapeLeadId = shapeResult.id;
       } catch (shapeErr) {
@@ -86,6 +89,7 @@ export async function POST(req: NextRequest) {
       additional_notes: body.additionalNotes
         || (body.commercialRe?.dealStory ? `[Commercial opportunity]\n${body.commercialRe.dealStory}` : ''),
       consents: body.consents,
+      assigned_lo: buildAssignedLoRecord(body.loanOfficer),
       shape_lead_id: shapeLeadId || null,
       submitted_at: new Date().toISOString(),
     };

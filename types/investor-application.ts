@@ -206,10 +206,17 @@ export interface Consents {
   creditPullConsent: boolean;
 }
 
+export interface LoanOfficerSelection {
+  workingWithLo?: boolean | null;
+  depursLo?: number | null;
+  name?: string;
+}
+
 export interface InvestorApplication {
   id?: string;
   loanProgram: LoanProgram | '';
   dealStage: DealStage | '';
+  loanOfficer?: LoanOfficerSelection;
   borrower: BorrowerInfo;
   entity: EntityInfo;
   experience: ExperienceInfo;

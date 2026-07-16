@@ -4,6 +4,8 @@ import type { LoanMetrics } from '@/lib/loan-calculations';
 import { buildSubmissionOnePager } from '@/lib/submission-one-pager';
 import { buildShapeSubmissionNote } from '@/lib/shape-submission-note';
 import { getSubmissionEmailRouting } from '@/lib/investor-submission-routing';
+import { assignedLoDepursLo } from '@/lib/assigned-lo';
+import { getShapeLoName } from '@/integrations/shape/lo-roster';
 import { SHAPE_STATUS_MAP } from '@/integrations/shape/field-map';
 import { PROGRAM_CONFIGS } from '@/config/loan-programs';
 import type { ProgramKey } from '@/config/loan-programs';
@@ -68,6 +70,8 @@ export type ZapierSubmissionPayload = {
     status: string;
     source: string;
     note: string;
+    depursLo?: number;
+    assignedLoName?: string;
   };
   transcript: SubmissionEmailContext['transcript'];
   /** Suggested Zapier paths — one webhook, branch in Zapier */
@@ -111,6 +115,11 @@ export function buildZapierSubmissionPayload(
   const programLabel = app.loanProgram
     ? (PROGRAM_CONFIGS[app.loanProgram as ProgramKey]?.label || app.loanProgram)
     : 'Investor Hub';
+
+  const depursLo = assignedLoDepursLo(app);
+  const assignedLoName = depursLo
+    ? (app.loanOfficer?.name || getShapeLoName(depursLo) || undefined)
+    : undefined;
 
   const shapeNote = buildShapeSubmissionNote(app, aiSummary, applicationId, {
     documentList: uploadedDocLabels,
@@ -174,6 +183,7 @@ export function buildZapierSubmissionPayload(
       status: SHAPE_STATUS_MAP[app.loanProgram || ''] || 'Loan Submitted',
       source: 'Investor Hub',
       note: shapeNote,
+      ...(depursLo ? { depursLo, assignedLoName } : {}),
     },
     transcript: context.transcript,
     zapierPaths: ['shape_sync', 'staff_email', 'customer_email'],

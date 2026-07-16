@@ -18,6 +18,7 @@ export interface ShapeLeadPayload {
   status: string;
   source: string;
   note?: string;
+  depursLo?: number;
 }
 
 export type ShapeUpsertResult = {
@@ -189,6 +190,7 @@ export async function upsertShapeLead(payload: ShapeLeadPayload): Promise<ShapeU
       notes_sidebar: `<strong>[Investor Hub]</strong> ${payload.loanProgram} · ${payload.loanAmount || '—'}${noteBlock}`,
       email: payload.email,
       phone: payload.phone,
+      ...(payload.depursLo ? { depursLo: payload.depursLo } : {}),
     });
 
     if (!update.synced) {
@@ -230,6 +232,7 @@ export async function upsertShapeLead(payload: ShapeLeadPayload): Promise<ShapeU
     notes: payload.note || `Investor Hub · ${payload.loanProgram}`,
     mstrstatus1: payload.status,
     leadsource: payload.source || 'Investor Hub',
+    ...(payload.depursLo ? { depursLo: payload.depursLo } : {}),
   });
 
   if (!createResult.created || !createResult.shape_lead_id) {

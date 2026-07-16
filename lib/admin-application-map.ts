@@ -33,5 +33,12 @@ export function applicationToInvestorShapeApp(row: Record<string, unknown>) {
     documents: [],
     additionalNotes: (row.additional_notes as string) || '',
     consents: row.consents,
+    loanOfficer: row.assigned_lo
+      ? {
+          workingWithLo: true,
+          depursLo: (row.assigned_lo as { depursLo?: number }).depursLo ?? null,
+          name: (row.assigned_lo as { name?: string }).name ?? '',
+        }
+      : undefined,
   };
 }

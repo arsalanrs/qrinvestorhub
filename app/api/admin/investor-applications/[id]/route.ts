@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/server';
 import { verifyAdminRequest } from '@/lib/admin-request';
 import { applicationToInvestorShapeApp } from '@/lib/admin-application-map';
+import { normalizePortalEmail } from '@/lib/portal-auth';
+import { mintPortalLoginUrl } from '@/lib/portal-login-token';
 import type { InvestorApplication } from '@/types/investor-application';
 import {
   assignShapeLeadOwner,
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
   const { id } = await context.params;
   const body = await req.json() as {
-    action?: 'create' | 'sync' | 'delete' | 'assign';
+    action?: 'create' | 'sync' | 'delete' | 'assign' | 'portal-link';
     depursLo?: number;
   };
 
@@ -76,6 +78,24 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
     const app = applicationToInvestorShapeApp(row) as unknown as InvestorApplication;
     const aiSummary = (row.ai_summary as string) || '';
+
+    if (body.action === 'portal-link') {
+      const borrower = row.borrower as { email?: string } | null;
+      const email = normalizePortalEmail(borrower?.email || '');
+      if (!email) {
+        return NextResponse.json({ error: 'Borrower email missing' }, { status: 400 });
+      }
+
+      try {
+        const { loginUrl, expiresAt } = await mintPortalLoginUrl(email, {
+          redirect: `/portfolio/${id}`,
+        });
+        return NextResponse.json({ ok: true, loginUrl, expiresAt });
+      } catch (err) {
+        console.error('[admin] portal-link error:', err);
+        return NextResponse.json({ error: 'Could not create portal link' }, { status: 500 });
+      }
+    }
 
     if (body.action === 'create' || body.action === 'sync') {
       const result = body.action === 'sync'

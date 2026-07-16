@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseApiClient } from '@/lib/supabase/server';
 import type { InvestorApplication } from '@/types/investor-application';
+import { buildAssignedLoRecord } from '@/lib/assigned-lo';
 
 function isMissingTableError(err: unknown): boolean {
   const code = (err as { code?: string })?.code;
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest) {
       additional_notes: body.additionalNotes
         || (body.commercialRe?.dealStory ? `[Commercial opportunity]\n${body.commercialRe.dealStory}` : ''),
       consents: body.consents,
+      assigned_lo: buildAssignedLoRecord(body.loanOfficer),
     };
 
     let applicationId = body.id;

@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
         id, status, loan_program, deal_stage, borrower, entity, loan_request,
         calculations, guideline_warnings, missing_documents, ai_summary,
         additional_notes, submitted_at, created_at, updated_at,
-        shape_lead_id, archived, archived_at,
+        shape_lead_id, archived, archived_at, assigned_lo,
         investor_properties ( is_main, property_data )
       `)
       .order('created_at', { ascending: false });

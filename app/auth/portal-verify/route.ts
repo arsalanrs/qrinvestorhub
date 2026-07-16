@@ -5,6 +5,7 @@ import {
   hashLoginToken,
   setPortalSessionCookie,
 } from '@/lib/portal-session';
+import { sanitizePortalRedirect } from '@/lib/portal-login-token';
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token')?.trim();
@@ -44,5 +45,6 @@ export async function GET(req: NextRequest) {
 
   await setPortalSessionCookie(normalizePortalEmail(row.email));
 
-  return NextResponse.redirect(`${origin}/portal`);
+  const redirect = sanitizePortalRedirect(req.nextUrl.searchParams.get('redirect'));
+  return NextResponse.redirect(`${origin}${redirect || '/portal'}`);
 }

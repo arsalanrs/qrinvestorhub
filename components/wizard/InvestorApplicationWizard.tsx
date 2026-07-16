@@ -9,6 +9,7 @@ import type { ProgramKey } from '@/config/loan-programs';
 import { QuestRockTopbar } from './QuestRockTopbar';
 import { StepRail } from './StepRail';
 import { LoanLedger } from './LoanLedger';
+import { LoanOfficerStep } from './steps/LoanOfficerStep';
 import { LoanGoalStep } from './steps/LoanGoalStep';
 import { BorrowerProfileStep } from './steps/BorrowerProfileStep';
 import { ExperienceLiquidityStep } from './steps/ExperienceLiquidityStep';
@@ -23,6 +24,7 @@ import { defaultCommercialRe } from '@/lib/default-commercial-re';
 import { allRequiredConsentsChecked } from '@/lib/wizard-consents';
 
 const WIZARD_STEPS = [
+  { key: 'loan-officer', label: 'Loan Officer', Component: LoanOfficerStep },
   { key: 'goal', label: 'Loan Goal', Component: LoanGoalStep },
   { key: 'borrower', label: 'Borrower', Component: BorrowerProfileStep },
   { key: 'experience', label: 'Experience', Component: ExperienceLiquidityStep },
@@ -46,10 +48,16 @@ function defaultProperty(): PropertyData {
   };
 }
 
-function getDefaultValues(initialProgram?: string): InvestorApplication {
+function getDefaultValues(
+  initialProgram?: string,
+  initialLo?: { depursLo: number; name: string },
+): InvestorApplication {
   return {
     loanProgram: (initialProgram as InvestorApplication['loanProgram']) || '',
     dealStage: '',
+    loanOfficer: initialLo
+      ? { workingWithLo: true, depursLo: initialLo.depursLo, name: initialLo.name }
+      : { workingWithLo: null, depursLo: null, name: '' },
     borrower: {
       firstName: '', lastName: '', email: '', phone: '',
       dateOfBirth: '', ssn: '',
@@ -100,9 +108,10 @@ interface SuccessData {
 
 interface Props {
   initialProgram?: string;
+  initialLo?: { depursLo: number; name: string; slug?: string };
 }
 
-export function InvestorApplicationWizard({ initialProgram }: Props) {
+export function InvestorApplicationWizard({ initialProgram, initialLo }: Props) {
   const [currentStep, setCurrentStep] = useState(0);
   const [autoSaveState, setAutoSaveState] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,7 +121,7 @@ export function InvestorApplicationWizard({ initialProgram }: Props) {
   const apiSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const methods = useForm<InvestorApplication>({
-    defaultValues: getDefaultValues(initialProgram),
+    defaultValues: getDefaultValues(initialProgram, initialLo),
     mode: 'onChange',
   });
 
@@ -242,7 +251,11 @@ export function InvestorApplicationWizard({ initialProgram }: Props) {
             />
 
             <form onSubmit={handleSubmit(onSubmit)}>
-              <StepComponent />
+              {WIZARD_STEPS[currentStep].key === 'loan-officer' ? (
+                <LoanOfficerStep prefilledLo={initialLo} />
+              ) : (
+                <StepComponent />
+              )}
 
               {/* Nav Buttons */}
               <div style={{

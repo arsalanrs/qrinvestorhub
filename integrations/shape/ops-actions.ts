@@ -14,11 +14,19 @@ import { buildShapeSubmissionNote } from '@/lib/shape-submission-note';
 const SHAPE_OPS_DELETE_STATUS =
   process.env.SHAPE_OPS_DELETE_STATUS?.trim() || 'Do Not Contact';
 
+function assignedDepursLo(app: InvestorApplication): number | undefined {
+  if (app.loanOfficer?.workingWithLo && app.loanOfficer.depursLo) {
+    return app.loanOfficer.depursLo;
+  }
+  return undefined;
+}
+
 export function buildShapePayloadFromApplication(
   app: InvestorApplication,
   applicationId: string,
   aiSummary?: string,
 ): ShapeLeadPayload {
+  const depursLo = assignedDepursLo(app);
   return {
     firstName: app.borrower.firstName,
     lastName: app.borrower.lastName,
@@ -31,6 +39,7 @@ export function buildShapePayloadFromApplication(
     note: buildShapeSubmissionNote(app, aiSummary || '', applicationId, {
       shapeAction: 'created',
     }),
+    ...(depursLo ? { depursLo } : {}),
   };
 }
 
@@ -57,6 +66,7 @@ export async function createShapeLeadForApplication(
     notes: payload.note || `Investor Hub · ${payload.loanProgram}`,
     mstrstatus1: payload.status,
     leadsource: payload.source || 'Investor Hub',
+    ...(payload.depursLo ? { depursLo: payload.depursLo } : {}),
   });
 
   if (!createResult.created || !createResult.shape_lead_id) {

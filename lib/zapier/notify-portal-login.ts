@@ -44,9 +44,16 @@ export function buildPortalLoginZapierPayload(
   };
 }
 
-export function buildPortalVerifyUrl(token: string): string {
+export function buildPortalVerifyUrl(
+  token: string,
+  options?: { redirect?: string },
+): string {
   const origin = getAppOrigin();
-  return `${origin}/auth/portal-verify?token=${encodeURIComponent(token)}`;
+  const base = `${origin}/auth/portal-verify?token=${encodeURIComponent(token)}`;
+  if (options?.redirect) {
+    return `${base}&redirect=${encodeURIComponent(options.redirect)}`;
+  }
+  return base;
 }
 
 export type ZapierNotifyResult =

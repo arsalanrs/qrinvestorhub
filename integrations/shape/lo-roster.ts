@@ -3,7 +3,29 @@ export type ShapeLoRosterEntry = {
   name: string;
   depursLo: number;
   email?: string;
+  slug?: string;
 };
+
+export function loSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function resolveLoParam(param: string): ShapeLoRosterEntry | null {
+  const trimmed = param.trim();
+  if (!trimmed) return null;
+
+  const roster = getShapeLoRoster();
+  const byId = Number(trimmed);
+  if (Number.isFinite(byId) && byId > 0) {
+    return roster.find(e => e.depursLo === byId) ?? null;
+  }
+
+  const slug = trimmed.toLowerCase();
+  return roster.find(e => (e.slug || loSlug(e.name)) === slug) ?? null;
+}
 
 export const DEFAULT_SHAPE_LO_ROSTER: ShapeLoRosterEntry[] = [
   { name: 'Tashawna Chisholm', depursLo: 49, email: 'tchisholm@questrock.com' },
@@ -30,10 +52,12 @@ export function getShapeLoRoster(): ShapeLoRosterEntry[] {
       if (Array.isArray(parsed) && parsed.length > 0) {
         cachedRoster = parsed.map(entry => {
           const o = entry as Record<string, unknown>;
+          const name = String(o.name ?? '').trim();
           return {
-            name: String(o.name ?? '').trim(),
+            name,
             depursLo: Number(o.depursLo ?? o.id),
             ...(o.email ? { email: String(o.email).trim() } : {}),
+            ...(o.slug ? { slug: String(o.slug).trim() } : { slug: loSlug(name) }),
           };
         });
         return cachedRoster;
@@ -43,7 +67,10 @@ export function getShapeLoRoster(): ShapeLoRosterEntry[] {
     }
   }
 
-  cachedRoster = [...DEFAULT_SHAPE_LO_ROSTER];
+  cachedRoster = DEFAULT_SHAPE_LO_ROSTER.map(entry => ({
+    ...entry,
+    slug: entry.slug || loSlug(entry.name),
+  }));
   return cachedRoster;
 }
 

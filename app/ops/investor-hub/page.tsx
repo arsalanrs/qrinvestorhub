@@ -30,6 +30,7 @@ interface AdminApplication {
   shape_lead_id?: string | null;
   archived?: boolean;
   archived_at?: string | null;
+  assigned_lo?: { depursLo?: number; name?: string } | null;
   property_city?: string;
   property_state?: string;
 }
@@ -37,6 +38,8 @@ interface AdminApplication {
 interface ShapeLoOption {
   name: string;
   depursLo: number;
+  slug?: string;
+  applyUrl?: string;
 }
 
 function borrowerName(app: AdminApplication) {
@@ -73,6 +76,7 @@ export default function InvestorHubAdminPage() {
   const [assignLo, setAssignLo] = useState('');
   const [actionBusy, setActionBusy] = useState('');
   const [actionMessage, setActionMessage] = useState('');
+  const [loCopyHint, setLoCopyHint] = useState('');
 
   useEffect(() => {
     try {
@@ -189,6 +193,30 @@ export default function InvestorHubAdminPage() {
       loadApplications(session);
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : 'Archive failed');
+    } finally {
+      setActionBusy('');
+    }
+  };
+
+  const openCustomerPortal = async () => {
+    if (!session || !selected) return;
+    if (!selected.borrower?.email) {
+      setActionMessage('Borrower email is missing — cannot open portal');
+      return;
+    }
+    setActionBusy('portal-link');
+    setActionMessage('');
+    try {
+      const res = await adminFetch(session, `/api/admin/investor-applications/${selected.id}`, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'portal-link' }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Could not open portal');
+      window.open(json.loginUrl, '_blank', 'noopener,noreferrer');
+      setActionMessage('Opened customer portal in a new tab (link expires in ~30 minutes).');
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : 'Could not open portal');
     } finally {
       setActionBusy('');
     }
@@ -512,6 +540,7 @@ export default function InvestorHubAdminPage() {
                     value: [selected.property_city, selected.property_state].filter(Boolean).join(', ') || '—',
                   },
                   { label: 'Shape lead', value: selected.shape_lead_id || 'Not linked' },
+                  { label: 'Assigned LO', value: selected.assigned_lo?.name || '—' },
                 ].map(({ label, value }) => (
                   <div key={label} className="admin-detail-card">
                     <span>{label}</span>
@@ -617,13 +646,60 @@ export default function InvestorHubAdminPage() {
 
               {actionMessage && <p className="admin-action-msg">{actionMessage}</p>}
 
-              <a href={`/portfolio/${selected.id}`} target="_blank" rel="noopener noreferrer" className="admin-link">
-                Open customer portfolio →
-              </a>
+              <div className="admin-portal-actions">
+                <button
+                  type="button"
+                  className="qr-btn qr-btn-secondary"
+                  disabled={Boolean(actionBusy) || !selected.borrower?.email}
+                  onClick={() => void openCustomerPortal()}
+                >
+                  {actionBusy === 'portal-link' ? 'Opening…' : 'Open customer portal'}
+                </button>
+                <a
+                  href="/investor-hub/apply"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="admin-link"
+                >
+                  New intake form →
+                </a>
+              </div>
             </>
           )}
         </aside>
       </div>
+
+      {shapeRoster.length > 0 && (
+        <section className="admin-lo-links">
+          <h2>Loan officer referral links</h2>
+          <p>Share each LO&apos;s unique intake link — the form pre-selects them and Shape receives their assignment on submit.</p>
+          <div className="admin-lo-links-grid">
+            {shapeRoster.map(lo => {
+              const link = lo.applyUrl || `/investor-hub/apply?lo=${lo.slug || lo.depursLo}`;
+              const absoluteLink = link.startsWith('http')
+                ? link
+                : `${window.location.origin}${link}`;
+              return (
+                <div key={lo.depursLo} className="admin-lo-link-card">
+                  <strong>{lo.name}</strong>
+                  <code>{absoluteLink}</code>
+                  <button
+                    type="button"
+                    className="qr-btn qr-btn-secondary"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(absoluteLink);
+                      setLoCopyHint(`Copied link for ${lo.name}`);
+                    }}
+                  >
+                    Copy link
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          {loCopyHint && <p className="admin-action-msg">{loCopyHint}</p>}
+        </section>
+      )}
 
       <style jsx global>{`
         .admin-shell {
@@ -886,6 +962,49 @@ export default function InvestorHubAdminPage() {
           font-weight: 600;
           color: var(--blue);
           text-decoration: none;
+        }
+        .admin-portal-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 8px;
+        }
+        .admin-lo-links {
+          margin-top: 28px;
+          padding: 20px 22px;
+          background: #fff;
+          border: 1px solid var(--line);
+          border-radius: var(--radius-lg);
+        }
+        .admin-lo-links h2 {
+          margin: 0 0 6px;
+          font-size: 18px;
+        }
+        .admin-lo-links > p {
+          margin: 0 0 16px;
+          font-size: 13px;
+          color: var(--slate);
+        }
+        .admin-lo-links-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 12px;
+        }
+        .admin-lo-link-card {
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .admin-lo-link-card strong {
+          font-size: 14px;
+        }
+        .admin-lo-link-card code {
+          font-size: 11px;
+          word-break: break-all;
+          color: var(--slate);
         }
         .admin-panel-shape {
           background: #f8fafc;
