@@ -74,6 +74,11 @@ interface LenderExportsData {
   includeReo: boolean;
   files: LenderExportFile[];
   checklist: LenderExportChecklistItem[];
+  preview?: {
+    project?: Record<string, string | number | boolean>;
+    budget?: Record<string, string | number | boolean>;
+    reo?: Record<string, string | number | boolean>;
+  };
 }
 
 interface VerificationResult {
@@ -323,6 +328,28 @@ export default function InvestorHubAdminPage() {
     } finally {
       setActionBusy('');
       setVerificationLoading(false);
+    }
+  };
+
+  const regenerateLenderPackage = async () => {
+    if (!staffSession || !selected) return;
+    setActionBusy('regen-lender');
+    setActionMessage('');
+    setLenderLoading(true);
+    try {
+      const res = await adminFetch(`/api/admin/investor-applications/${selected.id}/lender-exports`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to regenerate lender package');
+      setLenderExports((json.exports || null) as LenderExportsData | null);
+      setActionMessage('Lender package regenerated.');
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : 'Failed to regenerate lender package');
+    } finally {
+      setActionBusy('');
+      setLenderLoading(false);
     }
   };
 
@@ -772,12 +799,34 @@ export default function InvestorHubAdminPage() {
                   {lenderLoading ? (
                     <p>Generating / loading export files…</p>
                   ) : !lenderExports ? (
-                    <p>No lender export package generated yet for this submission.</p>
+                    <>
+                      <p>No lender export package generated yet for this submission.</p>
+                      <div className="admin-shape-actions" style={{ marginTop: 10 }}>
+                        <button
+                          type="button"
+                          className="qr-btn qr-btn-secondary"
+                          disabled={Boolean(actionBusy)}
+                          onClick={() => void regenerateLenderPackage()}
+                        >
+                          {actionBusy === 'regen-lender' ? 'Generating…' : 'Generate lender package now'}
+                        </button>
+                      </div>
+                    </>
                   ) : (
                     <>
                       <p style={{ marginBottom: 10 }}>
                         Generated: {new Date(lenderExports.generatedAt).toLocaleString()}
                       </p>
+                      <div className="admin-shape-actions" style={{ marginBottom: 10 }}>
+                        <button
+                          type="button"
+                          className="qr-btn qr-btn-secondary"
+                          disabled={Boolean(actionBusy)}
+                          onClick={() => void regenerateLenderPackage()}
+                        >
+                          {actionBusy === 'regen-lender' ? 'Regenerating…' : 'Regenerate lender package'}
+                        </button>
+                      </div>
                       <ul className="admin-doc-list">
                         {lenderExports.files.map(file => (
                           <li key={file.name}>
@@ -805,6 +854,47 @@ export default function InvestorHubAdminPage() {
                               </li>
                             ))}
                           </ul>
+                        </div>
+                      )}
+                      {lenderExports.preview && (
+                        <div style={{ marginTop: 12 }}>
+                          <p style={{ marginBottom: 6 }}>Filled values preview:</p>
+                          {lenderExports.preview.project && (
+                            <div style={{ marginBottom: 8 }}>
+                              <p style={{ marginBottom: 4 }}><strong>Project details</strong></p>
+                              <ul className="admin-doc-list">
+                                {Object.entries(lenderExports.preview.project).map(([key, value]) => (
+                                  <li key={`project-${key}`}>
+                                    <span>{key}: {String(value ?? '')}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {lenderExports.preview.budget && (
+                            <div style={{ marginBottom: 8 }}>
+                              <p style={{ marginBottom: 4 }}><strong>Budget summary</strong></p>
+                              <ul className="admin-doc-list">
+                                {Object.entries(lenderExports.preview.budget).map(([key, value]) => (
+                                  <li key={`budget-${key}`}>
+                                    <span>{key}: {String(value ?? '')}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {lenderExports.preview.reo && (
+                            <div>
+                              <p style={{ marginBottom: 4 }}><strong>REO summary</strong></p>
+                              <ul className="admin-doc-list">
+                                {Object.entries(lenderExports.preview.reo).map(([key, value]) => (
+                                  <li key={`reo-${key}`}>
+                                    <span>{key}: {String(value ?? '')}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </>
