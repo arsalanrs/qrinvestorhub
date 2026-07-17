@@ -112,6 +112,7 @@ export default function InvestorHubAdminPage() {
   const [applications, setApplications] = useState<AdminApplication[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<AdminApplication | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [programFilter, setProgramFilter] = useState('all');
@@ -169,6 +170,10 @@ export default function InvestorHubAdminPage() {
   useEffect(() => {
     if (staffSession) loadApplications();
   }, [staffSession, showArchived]);
+
+  useEffect(() => {
+    setSelectedIds(prev => prev.filter(id => applications.some(app => app.id === id)));
+  }, [applications]);
 
   useEffect(() => {
     fetch('/api/admin/shape-roster')
@@ -353,10 +358,81 @@ export default function InvestorHubAdminPage() {
     }
   };
 
+  const toggleSelectOne = (id: string, checked: boolean) => {
+    setSelectedIds(prev => {
+      if (checked) return prev.includes(id) ? prev : [...prev, id];
+      return prev.filter(existing => existing !== id);
+    });
+  };
+
+  const toggleSelectAllShown = (checked: boolean, shownIds: string[]) => {
+    setSelectedIds(prev => {
+      if (checked) {
+        const merged = new Set([...prev, ...shownIds]);
+        return [...merged];
+      }
+      const shown = new Set(shownIds);
+      return prev.filter(id => !shown.has(id));
+    });
+  };
+
+  const selectShownDrafts = (shownDraftIds: string[]) => {
+    setSelectedIds(prev => {
+      const merged = new Set([...prev, ...shownDraftIds]);
+      return [...merged];
+    });
+  };
+
+  const archiveSelected = async (draftOnly: boolean) => {
+    if (!staffSession) return;
+    const selectedApps = applications.filter(app => selectedIds.includes(app.id));
+    const targets = selectedApps
+      .filter(app => (draftOnly ? !app.submitted_at || app.status.toLowerCase().includes('draft') : true))
+      .filter(app => !app.archived);
+
+    if (targets.length === 0) {
+      setActionMessage(
+        draftOnly
+          ? 'No non-archived drafts selected.'
+          : 'No non-archived applications selected.',
+      );
+      return;
+    }
+
+    setActionBusy(draftOnly ? 'bulk-archive-drafts' : 'bulk-archive');
+    setActionMessage('');
+    try {
+      for (const app of targets) {
+        const res = await adminFetch(`/api/admin/investor-applications/${app.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ archived: true }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || `Failed to archive ${borrowerName(app)}`);
+      }
+      const targetIdSet = new Set(targets.map(app => app.id));
+      setSelectedIds(prev => prev.filter(id => !targetIdSet.has(id)));
+      if (selected && targetIdSet.has(selected.id)) {
+        setSelected(null);
+      }
+      setActionMessage(
+        draftOnly
+          ? `Archived ${targets.length} draft${targets.length === 1 ? '' : 's'}.`
+          : `Archived ${targets.length} application${targets.length === 1 ? '' : 's'}.`,
+      );
+      loadApplications();
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : 'Bulk archive failed');
+    } finally {
+      setActionBusy('');
+    }
+  };
+
   const signOut = async () => {
     await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
     setStaffSession(null);
     setSelected(null);
+    setSelectedIds([]);
     setApplications([]);
   };
 
@@ -411,6 +487,18 @@ export default function InvestorHubAdminPage() {
       return hay.includes(q);
     });
   }, [applications, search, statusFilter, programFilter, stateFilter, cityFilter, daysFilter]);
+
+  const shownIds = useMemo(() => filtered.map(app => app.id), [filtered]);
+  const shownDraftIds = useMemo(
+    () => filtered.filter(app => !app.submitted_at || app.status.toLowerCase().includes('draft')).map(app => app.id),
+    [filtered],
+  );
+  const selectedCount = selectedIds.length;
+  const selectedDraftCount = useMemo(() => {
+    const selectedSet = new Set(selectedIds);
+    return applications.filter(app => selectedSet.has(app.id) && (!app.submitted_at || app.status.toLowerCase().includes('draft'))).length;
+  }, [applications, selectedIds]);
+  const allShownSelected = shownIds.length > 0 && shownIds.every(id => selectedIds.includes(id));
 
   if (authLoading) {
     return (
@@ -586,6 +674,49 @@ export default function InvestorHubAdminPage() {
         </label>
         <span className="admin-count">{filtered.length} shown</span>
       </div>
+      <div className="admin-bulk-bar">
+        <span>{selectedCount} selected ({selectedDraftCount} drafts)</span>
+        <button
+          type="button"
+          className="qr-btn qr-btn-secondary"
+          disabled={shownIds.length === 0}
+          onClick={() => toggleSelectAllShown(!allShownSelected, shownIds)}
+        >
+          {allShownSelected ? 'Unselect shown' : 'Select all shown'}
+        </button>
+        <button
+          type="button"
+          className="qr-btn qr-btn-secondary"
+          disabled={shownDraftIds.length === 0}
+          onClick={() => selectShownDrafts(shownDraftIds)}
+        >
+          Select shown drafts
+        </button>
+        <button
+          type="button"
+          className="qr-btn qr-btn-secondary"
+          disabled={selectedCount === 0 || Boolean(actionBusy)}
+          onClick={() => setSelectedIds([])}
+        >
+          Clear selection
+        </button>
+        <button
+          type="button"
+          className="qr-btn qr-btn-secondary"
+          disabled={selectedCount === 0 || Boolean(actionBusy)}
+          onClick={() => { void archiveSelected(false); }}
+        >
+          {actionBusy === 'bulk-archive' ? 'Archiving…' : 'Archive selected'}
+        </button>
+        <button
+          type="button"
+          className="qr-btn qr-btn-secondary"
+          disabled={selectedDraftCount === 0 || Boolean(actionBusy)}
+          onClick={() => { void archiveSelected(true); }}
+        >
+          {actionBusy === 'bulk-archive-drafts' ? 'Archiving drafts…' : 'Archive selected drafts'}
+        </button>
+      </div>
 
       <div className="admin-layout">
         <section className="admin-table-wrap">
@@ -597,6 +728,14 @@ export default function InvestorHubAdminPage() {
             <table className="admin-table">
               <thead>
                 <tr>
+                  <th className="admin-select-col">
+                    <input
+                      type="checkbox"
+                      checked={allShownSelected}
+                      onChange={e => toggleSelectAllShown(e.target.checked, shownIds)}
+                      aria-label="Select all shown applications"
+                    />
+                  </th>
                   <th>Borrower</th>
                   <th>Location</th>
                   <th>Program</th>
@@ -616,9 +755,22 @@ export default function InvestorHubAdminPage() {
                   return (
                     <tr
                       key={app.id}
-                      className={`${selected?.id === app.id ? 'selected' : ''}${app.archived ? ' archived' : ''}`}
+                      className={[
+                        selected?.id === app.id ? 'selected' : '',
+                        selectedIds.includes(app.id) ? 'multi-selected' : '',
+                        app.archived ? 'archived' : '',
+                      ].filter(Boolean).join(' ')}
                       onClick={() => { setSelected(app); setActionMessage(''); setAssignLo(''); }}
                     >
+                      <td className="admin-select-col">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(app.id)}
+                          onClick={e => e.stopPropagation()}
+                          onChange={e => toggleSelectOne(app.id, e.target.checked)}
+                          aria-label={`Select ${borrowerName(app)}`}
+                        />
+                      </td>
                       <td>
                         <strong>{borrowerName(app)}</strong>
                         <span>{app.borrower?.email || '—'}</span>
@@ -1139,6 +1291,15 @@ export default function InvestorHubAdminPage() {
           border-bottom: 1px solid var(--line);
           background: var(--surface-dim);
         }
+        .admin-select-col {
+          width: 40px;
+          text-align: center !important;
+        }
+        .admin-select-col input {
+          width: 16px;
+          height: 16px;
+          cursor: pointer;
+        }
         .admin-table td {
           padding: 12px 14px;
           border-bottom: 1px solid var(--line);
@@ -1165,8 +1326,23 @@ export default function InvestorHubAdminPage() {
         .admin-table tbody tr.selected {
           background: var(--ledger-green-soft);
         }
+        .admin-table tbody tr.multi-selected {
+          box-shadow: inset 3px 0 0 #14532d;
+        }
         .admin-table tbody tr.archived {
           opacity: 0.65;
+        }
+        .admin-bulk-bar {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 14px;
+        }
+        .admin-bulk-bar span {
+          font-size: 13px;
+          color: var(--slate);
+          margin-right: 4px;
         }
         .admin-pill {
           display: inline-block;

@@ -102,7 +102,24 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Lender package is available for construction applications only' }, { status: 400 });
     }
 
-    const app = applicationToInvestorShapeApp(row) as unknown as InvestorApplication;
+    const [{ data: properties }, { data: documents }] = await Promise.all([
+      supabase
+        .from('investor_properties')
+        .select('id, is_main, property_data')
+        .eq('application_id', id)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('investor_documents')
+        .select('id, document_type, file_name, file_url, status, required')
+        .eq('application_id', id)
+        .order('created_at', { ascending: true }),
+    ]);
+
+    const app = applicationToInvestorShapeApp({
+      ...row,
+      properties: properties || [],
+      documents: documents || [],
+    }) as unknown as InvestorApplication;
     const lenderExport = await generateParkPlaceLenderExports(id, app);
 
     await supabase.from('investor_application_events').insert({

@@ -100,18 +100,53 @@ function parseMonths(value?: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function splitAddressParts(subjectAddress?: string): {
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+} {
+  const raw = (subjectAddress || '').trim();
+  if (!raw) return { address: '', city: '', state: '', zip: '' };
+  const parts = raw.split(',').map(p => p.trim()).filter(Boolean);
+  if (parts.length >= 3) {
+    const city = parts[parts.length - 2] || '';
+    const stateZip = parts[parts.length - 1] || '';
+    const match = stateZip.match(/^([A-Za-z]{2})\s*(\d{5}(?:-\d{4})?)?$/);
+    return {
+      address: parts.slice(0, parts.length - 2).join(', '),
+      city,
+      state: match?.[1] || '',
+      zip: match?.[2] || '',
+    };
+  }
+  const stateZipMatch = raw.match(/,\s*([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+  if (stateZipMatch) {
+    const prefix = raw.replace(/,\s*[A-Za-z]{2}\s+\d{5}(?:-\d{4})?$/, '');
+    const prefixParts = prefix.split(',').map(p => p.trim()).filter(Boolean);
+    return {
+      address: prefixParts.slice(0, -1).join(', ') || prefix,
+      city: prefixParts[prefixParts.length - 1] || '',
+      state: stateZipMatch[1] || '',
+      zip: stateZipMatch[2] || '',
+    };
+  }
+  return { address: raw, city: '', state: '', zip: '' };
+}
+
 async function buildReoWorkbook(app: InvestorApplication): Promise<Buffer> {
   const wb = await loadTemplateWorkbook('PPF REO.xlsx');
   const sheet = wb.getWorksheet('Real Estate Owned');
   if (!sheet) throw new Error('PPF REO template missing sheet: Real Estate Owned');
   const prop = app.properties?.find(p => p.isMain) || app.properties?.[0];
+  const fallbackAddr = splitAddressParts(app.loanRequest.purchaseSubjectAddress);
 
   // New Construction/Renovation row (row 4)
-  sheet.getCell('B4').value = prop?.address || app.loanRequest.purchaseSubjectAddress || '';
+  sheet.getCell('B4').value = prop?.address || fallbackAddr.address || app.loanRequest.purchaseSubjectAddress || '';
   sheet.getCell('C4').value = prop?.unit || '';
-  sheet.getCell('D4').value = prop?.city || '';
-  sheet.getCell('E4').value = prop?.state || '';
-  sheet.getCell('F4').value = prop?.zip || '';
+  sheet.getCell('D4').value = prop?.city || fallbackAddr.city || '';
+  sheet.getCell('E4').value = prop?.state || fallbackAddr.state || '';
+  sheet.getCell('F4').value = prop?.zip || fallbackAddr.zip || '';
   sheet.getCell('G4').value = prop?.propertyType || '';
   sheet.getCell('H4').value = app.entity.entityName || `${app.borrower.firstName} ${app.borrower.lastName}`.trim();
   sheet.getCell('I4').value = app.entity.ownershipPercentage ? Number(app.entity.ownershipPercentage) / 100 : 1;
@@ -159,18 +194,24 @@ async function buildConstructionBudgetWorkbook(app: InvestorApplication): Promis
     throw new Error('Construction Budget template missing one or more required sheets');
   }
   const prop = app.properties?.find(p => p.isMain) || app.properties?.[0];
+  const fallbackAddr = splitAddressParts(app.loanRequest.purchaseSubjectAddress);
   const borrowerName = `${app.borrower.firstName} ${app.borrower.lastName}`.trim();
-  const fullAddress = [prop?.address, prop?.city, prop?.state, prop?.zip].filter(Boolean).join(', ');
+  const fullAddress = [
+    prop?.address || fallbackAddr.address || app.loanRequest.purchaseSubjectAddress || '',
+    prop?.city || fallbackAddr.city || '',
+    prop?.state || fallbackAddr.state || '',
+    prop?.zip || fallbackAddr.zip || '',
+  ].filter(Boolean).join(', ');
   const inspectionName = `${app.loanOfficer?.name || app.borrower.firstName} ${app.borrower.lastName}`.trim();
   const gcCompany = app.entity.entityName || borrowerName;
   const timelineMonths = parseMonths(app.constructionGoal?.constructionTimeline || app.loanRequest.fundingTimeline) || 6;
 
   // Step 1 input cells (green cells in lender template)
   step1.getCell('D10').value = borrowerName;
-  step1.getCell('E12').value = prop?.address || app.loanRequest.purchaseSubjectAddress || '';
-  step1.getCell('E14').value = prop?.city || '';
-  step1.getCell('E15').value = prop?.state || '';
-  step1.getCell('E16').value = prop?.zip || '';
+  step1.getCell('E12').value = prop?.address || fallbackAddr.address || app.loanRequest.purchaseSubjectAddress || '';
+  step1.getCell('E14').value = prop?.city || fallbackAddr.city || '';
+  step1.getCell('E15').value = prop?.state || fallbackAddr.state || '';
+  step1.getCell('E16').value = prop?.zip || fallbackAddr.zip || '';
   step1.getCell('K10').value = inspectionName;
   step1.getCell('K11').value = app.borrower.phone || '';
   step1.getCell('K12').value = app.borrower.email || '';
@@ -307,13 +348,14 @@ export async function generateParkPlaceLenderExports(
   files.push({ name: 'park-place-required-documents.csv', storageRef: checklistRef });
 
   const prop = app.properties?.find(p => p.isMain) || app.properties?.[0];
+  const fallbackAddr = splitAddressParts(app.loanRequest.purchaseSubjectAddress);
   const preview: LenderExportArtifact['preview'] = {
     project: {
       borrowerName: `${app.borrower.firstName} ${app.borrower.lastName}`.trim(),
-      propertyAddress: prop?.address || app.loanRequest.purchaseSubjectAddress || '',
-      propertyCity: prop?.city || '',
-      propertyState: prop?.state || '',
-      propertyZip: prop?.zip || '',
+      propertyAddress: prop?.address || fallbackAddr.address || app.loanRequest.purchaseSubjectAddress || '',
+      propertyCity: prop?.city || fallbackAddr.city || '',
+      propertyState: prop?.state || fallbackAddr.state || '',
+      propertyZip: prop?.zip || fallbackAddr.zip || '',
       gcName: app.constructionGoal?.builderName || '',
       gcLicense: app.constructionGoal?.builderLicense || '',
       permitStatus: app.constructionGoal?.permitStatus || '',
