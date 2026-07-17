@@ -55,6 +55,36 @@ interface UploadedDocument {
   openUrl: string;
 }
 
+interface LenderExportFile {
+  name: string;
+  openUrl: string;
+}
+
+interface LenderExportChecklistItem {
+  key?: string;
+  label?: string;
+  required?: boolean;
+  uploaded?: boolean;
+  matchedDocumentName?: string;
+}
+
+interface LenderExportsData {
+  lender: string;
+  generatedAt: string;
+  includeReo: boolean;
+  files: LenderExportFile[];
+  checklist: LenderExportChecklistItem[];
+}
+
+interface VerificationResult {
+  generatedAt: string;
+  verdict: 'pass' | 'review' | 'fail';
+  summary: string;
+  blockers: string[];
+  warnings: string[];
+  highlights: string[];
+}
+
 function borrowerName(app: AdminApplication) {
   return `${app.borrower?.firstName || ''} ${app.borrower?.lastName || ''}`.trim() || 'Unknown';
 }
@@ -91,6 +121,10 @@ export default function InvestorHubAdminPage() {
   const [loCopyHint, setLoCopyHint] = useState('');
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
+  const [lenderExports, setLenderExports] = useState<LenderExportsData | null>(null);
+  const [lenderLoading, setLenderLoading] = useState(false);
+  const [verification, setVerification] = useState<VerificationResult | null>(null);
+  const [verificationLoading, setVerificationLoading] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -167,6 +201,32 @@ export default function InvestorHubAdminPage() {
       .finally(() => setDocsLoading(false));
   }, [selected?.id, staffSession]);
 
+  useEffect(() => {
+    if (!staffSession || !selected) {
+      setLenderExports(null);
+      return;
+    }
+    setLenderLoading(true);
+    adminFetch(`/api/admin/investor-applications/${selected.id}/lender-exports`)
+      .then(res => res.json())
+      .then(json => setLenderExports((json.exports || null) as LenderExportsData | null))
+      .catch(() => setLenderExports(null))
+      .finally(() => setLenderLoading(false));
+  }, [selected?.id, staffSession]);
+
+  useEffect(() => {
+    if (!staffSession || !selected) {
+      setVerification(null);
+      return;
+    }
+    setVerificationLoading(true);
+    adminFetch(`/api/admin/investor-applications/${selected.id}/verify`)
+      .then(res => res.json())
+      .then(json => setVerification((json.verification || null) as VerificationResult | null))
+      .catch(() => setVerification(null))
+      .finally(() => setVerificationLoading(false));
+  }, [selected?.id, staffSession]);
+
   const runShapeAction = async (
     action: 'create' | 'sync' | 'delete' | 'assign',
     depursLo?: number,
@@ -237,6 +297,32 @@ export default function InvestorHubAdminPage() {
       setActionMessage(err instanceof Error ? err.message : 'Could not open portal');
     } finally {
       setActionBusy('');
+    }
+  };
+
+  const runVerificationBot = async () => {
+    if (!staffSession || !selected) return;
+    if (selected.status !== 'submitted') {
+      setActionMessage('Verification bot is available only for submitted applications.');
+      return;
+    }
+    setActionBusy('verify');
+    setActionMessage('');
+    setVerificationLoading(true);
+    try {
+      const res = await adminFetch(`/api/admin/investor-applications/${selected.id}/verify`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Verification failed');
+      setVerification((json.verification || null) as VerificationResult | null);
+      setActionMessage('Verification bot completed.');
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : 'Verification failed');
+    } finally {
+      setActionBusy('');
+      setVerificationLoading(false);
     }
   };
 
@@ -596,6 +682,52 @@ export default function InvestorHubAdminPage() {
                 </div>
               )}
 
+              <div className="admin-panel admin-panel-info">
+                <h3>Verification Bot (Ops)</h3>
+                {selected.status !== 'submitted' ? (
+                  <p>Available only for submitted applications.</p>
+                ) : (
+                  <>
+                    <div className="admin-shape-actions" style={{ marginBottom: 10 }}>
+                      <button
+                        type="button"
+                        className="qr-btn qr-btn-secondary"
+                        disabled={Boolean(actionBusy)}
+                        onClick={() => { void runVerificationBot(); }}
+                      >
+                        {actionBusy === 'verify' ? 'Running…' : 'Run verification bot'}
+                      </button>
+                    </div>
+                    {verificationLoading ? (
+                      <p>Running checks…</p>
+                    ) : !verification ? (
+                      <p>No verification run yet.</p>
+                    ) : (
+                      <>
+                        <p><strong>Verdict:</strong> {verification.verdict}</p>
+                        <p>{verification.summary}</p>
+                        {verification.blockers?.length > 0 && (
+                          <>
+                            <p><strong>Blockers</strong></p>
+                            <ul>
+                              {verification.blockers.map((b, i) => <li key={i}>{b}</li>)}
+                            </ul>
+                          </>
+                        )}
+                        {verification.warnings?.length > 0 && (
+                          <>
+                            <p><strong>Warnings</strong></p>
+                            <ul>
+                              {verification.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                            </ul>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+
               {selected.missing_documents && selected.missing_documents.length > 0 && (
                 <div className="admin-panel">
                   <h3>Missing documents</h3>
@@ -633,6 +765,52 @@ export default function InvestorHubAdminPage() {
                   </ul>
                 )}
               </div>
+
+              {selected.loan_program === 'construction' && (
+                <div className="admin-panel admin-panel-docs">
+                  <h3>Park Place lender package</h3>
+                  {lenderLoading ? (
+                    <p>Generating / loading export files…</p>
+                  ) : !lenderExports ? (
+                    <p>No lender export package generated yet for this submission.</p>
+                  ) : (
+                    <>
+                      <p style={{ marginBottom: 10 }}>
+                        Generated: {new Date(lenderExports.generatedAt).toLocaleString()}
+                      </p>
+                      <ul className="admin-doc-list">
+                        {lenderExports.files.map(file => (
+                          <li key={file.name}>
+                            <a
+                              href={file.openUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="admin-doc-link"
+                            >
+                              {file.name}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                      {lenderExports.checklist?.length > 0 && (
+                        <div style={{ marginTop: 10 }}>
+                          <p style={{ marginBottom: 6 }}>Checklist status:</p>
+                          <ul className="admin-doc-list">
+                            {lenderExports.checklist.map((item, idx) => (
+                              <li key={`${item.key || idx}`}>
+                                <span>
+                                  {item.uploaded ? '✓' : '○'} {item.label || item.key}
+                                  {item.required === false ? ' (not required)' : ''}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
 
               {selected.additional_notes && (
                 <div className="admin-panel">

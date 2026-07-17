@@ -12,6 +12,7 @@ import { lookupCallTranscriptSummary } from '@/lib/call-transcript-lookup';
 import { buildShapeSubmissionNote } from '@/lib/shape-submission-note';
 import { buildZapierSubmissionPayload } from '@/lib/zapier/build-submission-payload';
 import { notifyZapierSubmission } from '@/lib/zapier/notify-submission';
+import { generateParkPlaceLenderExports } from '@/lib/lender-exports/park-place';
 
 export async function POST(req: NextRequest) {
   try {
@@ -148,6 +149,27 @@ export async function POST(req: NextRequest) {
           transcriptFound: transcript.found,
         },
       });
+    }
+
+    if (applicationId && body.loanProgram === 'construction') {
+      try {
+        const lenderExport = await generateParkPlaceLenderExports(applicationId, body);
+        await supabase.from('investor_application_events').insert({
+          application_id: applicationId,
+          event_type: 'lender_exports_generated',
+          payload: lenderExport,
+        });
+      } catch (lenderErr) {
+        console.error('[submit] lender export generation failed:', lenderErr);
+        await supabase.from('investor_application_events').insert({
+          application_id: applicationId,
+          event_type: 'lender_exports_failed',
+          payload: {
+            lender: 'park_place',
+            error: lenderErr instanceof Error ? lenderErr.message : String(lenderErr),
+          },
+        });
+      }
     }
 
     let zapierStatus: string = 'skipped';
